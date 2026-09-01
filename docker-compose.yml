@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:15
+    container_name: gym_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      # 호스트:컨테이너 — DBeaver 등 GUI 툴이 localhost:${DB_HOST_PORT} 로 접근 (§13.4)
+      - "${DB_HOST_PORT}:5432"
+    volumes:
+      # named volume 으로 데이터 영속화 — 컨테이너를 지워도 데이터 유지 (§13.4)
+      - gym_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  gym_db_data:
