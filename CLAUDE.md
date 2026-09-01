@@ -27,7 +27,7 @@
 | 상태/서버통신 | TanStack Query (서버 상태), Zustand (전역 클라이언트 상태), Axios |
 | 라우팅 | React Router |
 | 폼/검증 | React Hook Form + Zod |
-| Backend | Spring Boot 3.x, Java 17+, Spring Web, Spring Security, Spring Data JPA |
+| Backend | Spring Boot 4.x, Java 17+, Spring Web(MVC), Spring Security, Spring Data JPA |
 | DB | PostgreSQL 15+ |
 | 인증 | JWT (Access + Refresh) |
 | 빌드/도구 | ESLint, Prettier (FE) / Gradle, Checkstyle (BE) |
