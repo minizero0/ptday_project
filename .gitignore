@@ -1,0 +1,43 @@
+# ── 비밀값 / 환경변수 (§12, §13 — 절대 커밋 금지) ──
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ── OS / 에디터 ──
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# ─────────────────────────────
+# Frontend (React + Vite)
+# ─────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+frontend/coverage/
+frontend/*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ─────────────────────────────
+# Backend (Spring Boot + Gradle)
+# ─────────────────────────────
+backend/build/
+backend/.gradle/
+backend/out/
+backend/bin/
+!backend/gradle/wrapper/gradle-wrapper.jar
+
+# ─────────────────────────────
+# Docker / 데이터 (§13)
+# ─────────────────────────────
+# 로컬 DB 데이터 등 (named volume은 git 대상 아님이지만, 바인드 마운트 대비)
+**/pgdata/
