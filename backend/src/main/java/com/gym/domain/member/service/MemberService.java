@@ -2,12 +2,14 @@ package com.gym.domain.member.service;
 
 import com.gym.common.exception.BusinessException;
 import com.gym.common.exception.ErrorCode;
+import com.gym.common.response.PageResponse;
 import com.gym.domain.member.dto.MemberCreateRequest;
 import com.gym.domain.member.dto.MemberResponse;
 import com.gym.domain.member.entity.Member;
 import com.gym.domain.member.repository.MemberRepository;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +47,11 @@ public class MemberService {
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
         return MemberResponse.from(member);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<MemberResponse> getMembers(Pageable pageable) {
+        return PageResponse.from(memberRepository.findAll(pageable).map(MemberResponse::from));
     }
 
     /**
