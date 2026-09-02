@@ -44,6 +44,10 @@ public class Member {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    // soft delete 표시. null 이면 활성 회원, 값이 있으면 삭제된 것으로 간주한다.
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     protected Member() {
         // JPA 전용 기본 생성자
     }
@@ -62,6 +66,11 @@ public class Member {
         this.phone = phone;
         this.gender = gender;
         this.birthDate = birthDate;
+    }
+
+    // soft delete: 실제로 지우지 않고 삭제 시각만 기록한다.
+    public void delete() {
+        this.deletedAt = Instant.now();
     }
 
     public Long getId() {

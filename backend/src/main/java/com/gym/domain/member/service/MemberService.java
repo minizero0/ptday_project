@@ -45,23 +45,33 @@ public class MemberService {
 
     @Transactional(readOnly = true)
     public MemberResponse getMember(Long id) {
-        Member member = memberRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        Member member = findActiveMember(id);
         return MemberResponse.from(member);
     }
 
     @Transactional(readOnly = true)
     public PageResponse<MemberResponse> getMembers(Pageable pageable) {
-        return PageResponse.from(memberRepository.findAll(pageable).map(MemberResponse::from));
+        return PageResponse.from(
+                memberRepository.findAllByDeletedAtIsNull(pageable).map(MemberResponse::from));
     }
 
     @Transactional
     public MemberResponse updateMember(Long id, MemberUpdateRequest request) {
-        Member member = memberRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        Member member = findActiveMember(id);
         // 변경 감지(dirty checking): 트랜잭션 커밋 시점에 자동 UPDATE 되므로 save() 불필요
         member.updateInfo(request.name(), request.phone(), request.gender(), request.birthDate());
         return MemberResponse.from(member);
+    }
+
+    @Transactional
+    public void deleteMember(Long id) {
+        Member member = findActiveMember(id);
+        member.delete();
+    }
+
+    private Member findActiveMember(Long id) {
+        return memberRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
     }
 
     /**
