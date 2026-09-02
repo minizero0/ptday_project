@@ -17,3 +17,14 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+# JWT 설정. 비밀키는 파일에 두지 않고 환경변수(.env)로 주입한다 (CLAUDE.md §12)
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity-seconds: ${JWT_ACCESS_TOKEN_VALIDITY_SECONDS:3600}
+
+# 첫 관리자 계정 시딩 값. 실제 비밀번호는 .env 로 주입한다 (CLAUDE.md §12)
+app:
+  admin:
+    username: ${ADMIN_USERNAME:admin}
+    password: ${ADMIN_PASSWORD}
