@@ -5,6 +5,7 @@ import com.gym.common.exception.ErrorCode;
 import com.gym.common.response.PageResponse;
 import com.gym.domain.member.dto.MemberCreateRequest;
 import com.gym.domain.member.dto.MemberResponse;
+import com.gym.domain.member.dto.MemberUpdateRequest;
 import com.gym.domain.member.entity.Member;
 import com.gym.domain.member.repository.MemberRepository;
 import java.time.LocalDate;
@@ -52,6 +53,15 @@ public class MemberService {
     @Transactional(readOnly = true)
     public PageResponse<MemberResponse> getMembers(Pageable pageable) {
         return PageResponse.from(memberRepository.findAll(pageable).map(MemberResponse::from));
+    }
+
+    @Transactional
+    public MemberResponse updateMember(Long id, MemberUpdateRequest request) {
+        Member member = memberRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        // 변경 감지(dirty checking): 트랜잭션 커밋 시점에 자동 UPDATE 되므로 save() 불필요
+        member.updateInfo(request.name(), request.phone(), request.gender(), request.birthDate());
+        return MemberResponse.from(member);
     }
 
     /**

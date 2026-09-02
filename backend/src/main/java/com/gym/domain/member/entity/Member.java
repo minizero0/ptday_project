@@ -56,6 +56,14 @@ public class Member {
         this.birthDate = birthDate;
     }
 
+    // 수정 가능한 정보만 바꾸는 의도 명시 메서드. member_no 등 불변 값은 건드리지 않는다.
+    public void updateInfo(String name, String phone, String gender, LocalDate birthDate) {
+        this.name = name;
+        this.phone = phone;
+        this.gender = gender;
+        this.birthDate = birthDate;
+    }
+
     public Long getId() {
         return id;
     }
