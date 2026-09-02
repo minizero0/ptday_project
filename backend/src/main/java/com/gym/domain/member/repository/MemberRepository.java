@@ -11,4 +11,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     // 가입 시 회원번호 중복 검사용
     boolean existsByMemberNo(String memberNo);
+
+    // 자동 채번용: 해당 연도 접두사로 시작하는 회원번호 중 가장 큰 값(= 그 해 마지막 발급 번호)
+    Optional<Member> findTopByMemberNoStartingWithOrderByMemberNoDesc(String yearPrefix);
 }
