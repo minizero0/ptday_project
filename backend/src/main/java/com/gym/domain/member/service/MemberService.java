@@ -1,5 +1,7 @@
 package com.gym.domain.member.service;
 
+import com.gym.common.exception.BusinessException;
+import com.gym.common.exception.ErrorCode;
 import com.gym.domain.member.dto.MemberCreateRequest;
 import com.gym.domain.member.dto.MemberResponse;
 import com.gym.domain.member.entity.Member;
@@ -36,6 +38,13 @@ public class MemberService {
                 request.birthDate());
         Member saved = memberRepository.save(member);
         return MemberResponse.from(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public MemberResponse getMember(Long id) {
+        Member member = memberRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        return MemberResponse.from(member);
     }
 
     /**
