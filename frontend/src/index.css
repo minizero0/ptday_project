@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* NotionInter 번들 (라틴). 한글은 system-ui 폴백으로 렌더링 */
+@font-face {
+  font-family: 'NotionInter';
+  src: url('./assets/fonts/NotionInter-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'NotionInter';
+  src: url('./assets/fonts/NotionInter-500.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'NotionInter';
+  src: url('./assets/fonts/NotionInter-600.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'NotionInter';
+  src: url('./assets/fonts/NotionInter-700.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-text-primary font-sans;
+  }
+
+  /* focus 는 box-shadow 가 아니라 뚜렷한 outline (디자인 시스템 규칙) */
+  :focus-visible {
+    outline: 2px solid theme('colors.primary.DEFAULT');
+    outline-offset: 2px;
+  }
+}
+
+/* prefers-reduced-motion 존중 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
