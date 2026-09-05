@@ -9,10 +9,15 @@ spring:
     # 비밀번호는 파일에 하드코딩하지 않는다 — .env 등 환경변수로 주입 (CLAUDE.md §12)
     password: ${POSTGRES_PASSWORD}
 
+  # 스키마는 Flyway 마이그레이션(db/migration/V*.sql)이 유일한 원천이다.
+  # 이미 테이블이 있는 기존 DB는 baseline(V1 건너뜀), 빈 DB는 V1 부터 순서대로 적용된다.
+  flyway:
+    baseline-on-migrate: true
+
   jpa:
     hibernate:
-      # 개발 초기 편의를 위한 자동 반영. 운영 프로파일에서는 검증/마이그레이션으로 대체한다.
-      ddl-auto: update
+      # Hibernate 는 스키마를 만들지 않고 엔티티와 DB 의 일치 여부만 검증한다
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
