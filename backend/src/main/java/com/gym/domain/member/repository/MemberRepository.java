@@ -37,4 +37,21 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
               and replace(coalesce(m.phone, ''), '-', '') like concat('%', :digits)
             """)
     List<Member> findActiveByPhoneEndingWith(@Param("digits") String digits);
+
+    /**
+     * 회원 검색: 이름·회원번호·전화번호를 한 번에 훑는다(이용권 등록 시 회원 선택용).
+     * digits 는 검색어에서 숫자만 남긴 값. 숫자가 없으면 빈 문자열로 넘기고 :digits <> '' 로 조건을 끈다.
+     * null 을 넘기면 PostgreSQL 이 파라미터 타입을 추론하지 못해 like 비교에서 실패한다
+     * (operator does not exist: text ~~ bytea).
+     */
+    @Query("""
+            select m from Member m
+            where m.deletedAt is null
+              and (lower(m.name) like lower(concat('%', :keyword, '%'))
+                   or m.memberNo like concat('%', :keyword, '%')
+                   or (:digits <> ''
+                       and replace(coalesce(m.phone, ''), '-', '') like concat('%', :digits, '%')))
+            """)
+    Page<Member> searchActive(
+            @Param("keyword") String keyword, @Param("digits") String digits, Pageable pageable);
 }

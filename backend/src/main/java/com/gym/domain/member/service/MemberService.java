@@ -50,9 +50,18 @@ public class MemberService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<MemberResponse> getMembers(Pageable pageable) {
+    public PageResponse<MemberResponse> getMembers(String keyword, Pageable pageable) {
+        String trimmed = keyword != null ? keyword.trim() : "";
+        if (trimmed.isEmpty()) {
+            return PageResponse.from(
+                    memberRepository.findAllByDeletedAtIsNull(pageable).map(MemberResponse::from));
+        }
+
+        // 전화번호는 하이픈 표기가 제각각이라 숫자만 남겨 비교한다.
+        // 숫자가 없으면 빈 문자열을 넘겨 Repository 쪽에서 전화번호 조건을 끄게 한다.
+        String digits = trimmed.replaceAll("\\D", "");
         return PageResponse.from(
-                memberRepository.findAllByDeletedAtIsNull(pageable).map(MemberResponse::from));
+                memberRepository.searchActive(trimmed, digits, pageable).map(MemberResponse::from));
     }
 
     @Transactional

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -43,8 +44,9 @@ public class MemberController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<MemberResponse>>> getMembers(Pageable pageable) {
-        PageResponse<MemberResponse> response = memberService.getMembers(pageable);
+    public ResponseEntity<ApiResponse<PageResponse<MemberResponse>>> getMembers(
+            @RequestParam(required = false) String keyword, Pageable pageable) {
+        PageResponse<MemberResponse> response = memberService.getMembers(keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
