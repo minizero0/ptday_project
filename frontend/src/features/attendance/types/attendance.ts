@@ -1,3 +1,5 @@
+import type { MembershipPeriodStatus } from '../../memberships/types/membership';
+
 // 백엔드 attendance DTO 와 1:1 대응 (domain/attendance/dto)
 
 export interface Attendance {
@@ -6,6 +8,14 @@ export interface Attendance {
   memberNo: string;
   name: string;
   checkedInAt: string; // ISO-8601 UTC — 표시할 때만 로컬 변환 (CLAUDE.md §5)
+  membership: AttendanceMembership | null; // 이용권 이력이 없으면 null
+}
+
+// 그리드 한 줄에 표시할 이용권 요약 (AttendanceResponse.MembershipSummary)
+export interface AttendanceMembership {
+  status: MembershipPeriodStatus;
+  startDate: string; // yyyy-MM-dd
+  endDate: string; // yyyy-MM-dd
 }
 
 export interface AttendanceListResponse {

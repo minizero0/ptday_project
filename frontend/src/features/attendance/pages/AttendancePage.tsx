@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
+import { formatDay } from '../../../lib/date';
 import { MemberDetailPanel } from '../../members/components/MemberDetailPanel';
+import { MembershipStatusBadge } from '../../memberships/components/MembershipStatusBadge';
 import { useDailyAttendancesQuery } from '../hooks/useAttendance';
 import type { Attendance } from '../types/attendance';
 
@@ -58,7 +60,7 @@ export function AttendancePage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-full flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold">출석 현황</h1>
@@ -103,8 +105,8 @@ export function AttendancePage() {
         </div>
       </div>
 
-      <div className="flex items-start gap-4">
-        <Card className="min-w-0 flex-1 overflow-x-auto p-0">
+      <div className="flex min-h-0 flex-1 items-stretch gap-4">
+        <Card className="min-w-0 flex-1 overflow-auto p-0">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead>
             <tr className="border-b border-border text-text-muted">
@@ -150,10 +152,20 @@ export function AttendancePage() {
                 <td className="px-4 py-3 font-medium">{formatTime(attendance.checkedInAt)}</td>
                 <td className="px-4 py-3">{attendance.memberNo}</td>
                 <td className="px-4 py-3">{attendance.name}</td>
-                {/* 이용권/PT 컬럼은 2·3차(도메인 구현)에서 채운다 */}
-                <td className="px-4 py-3 text-text-muted">-</td>
-                <td className="px-4 py-3 text-text-muted">-</td>
-                <td className="px-4 py-3 text-text-muted">-</td>
+                <td className="px-4 py-3">
+                  {attendance.membership ? (
+                    <MembershipStatusBadge status={attendance.membership.status} />
+                  ) : (
+                    <span className="text-text-muted">-</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-text-muted">
+                  {attendance.membership ? formatDay(attendance.membership.startDate) : '-'}
+                </td>
+                <td className="px-4 py-3 text-text-muted">
+                  {attendance.membership ? formatDay(attendance.membership.endDate) : '-'}
+                </td>
+                {/* PT 잔여는 PT권 도메인(3차) 구현 후 채운다 */}
                 <td className="px-4 py-3 text-text-muted">-</td>
               </tr>
             ))}
@@ -161,12 +173,10 @@ export function AttendancePage() {
         </table>
         </Card>
 
-        {selectedMemberId !== null && (
-          <MemberDetailPanel
-            memberId={selectedMemberId}
-            onClose={() => setSelectedMemberId(null)}
-          />
-        )}
+        <MemberDetailPanel
+          memberId={selectedMemberId}
+          onClose={() => setSelectedMemberId(null)}
+        />
       </div>
     </div>
   );

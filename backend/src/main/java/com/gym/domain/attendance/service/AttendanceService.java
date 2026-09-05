@@ -11,10 +11,17 @@ import com.gym.domain.attendance.entity.Attendance;
 import com.gym.domain.attendance.repository.AttendanceRepository;
 import com.gym.domain.member.entity.Member;
 import com.gym.domain.member.repository.MemberRepository;
+import com.gym.domain.membership.entity.Membership;
+import com.gym.domain.membership.repository.MembershipRepository;
+import com.gym.domain.membership.service.MembershipPeriod;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,11 +35,15 @@ public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final MemberRepository memberRepository;
+    private final MembershipRepository membershipRepository;
 
     public AttendanceService(
-            AttendanceRepository attendanceRepository, MemberRepository memberRepository) {
+            AttendanceRepository attendanceRepository,
+            MemberRepository memberRepository,
+            MembershipRepository membershipRepository) {
         this.attendanceRepository = attendanceRepository;
         this.memberRepository = memberRepository;
+        this.membershipRepository = membershipRepository;
     }
 
     /**
@@ -65,10 +76,14 @@ public class AttendanceService {
         LocalDate date = requestedDate != null ? requestedDate : LocalDate.now(BUSINESS_ZONE);
         Instant start = date.atStartOfDay(BUSINESS_ZONE).toInstant();
         Instant end = date.plusDays(1).atStartOfDay(BUSINESS_ZONE).toInstant();
-        List<AttendanceResponse> items = attendanceRepository
-                .findAllWithMemberBetween(start, end)
-                .stream()
-                .map(AttendanceResponse::from)
+        List<Attendance> attendances = attendanceRepository.findAllWithMemberBetween(start, end);
+
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        Map<Long, Membership> membershipByMemberId = loadRepresentativeMemberships(attendances, today);
+
+        List<AttendanceResponse> items = attendances.stream()
+                .map(attendance -> AttendanceResponse.from(
+                        attendance, membershipByMemberId.get(attendance.getMember().getId()), today))
                 .toList();
         return AttendanceListResponse.of(date, items);
     }
@@ -90,7 +105,48 @@ public class AttendanceService {
 
     private AttendanceResponse saveAttendance(Member member) {
         Attendance saved = attendanceRepository.save(new Attendance(member));
-        return AttendanceResponse.from(saved);
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        Membership membership = pickRepresentative(
+                membershipRepository.findByMemberIdOrderByStartDateDescIdDesc(member.getId()), today);
+        return AttendanceResponse.from(saved, membership, today);
+    }
+
+    /** 출석한 회원들의 이용권을 한 번의 조회로 가져와 회원별 대표 1건으로 줄인다(N+1 방지). */
+    private Map<Long, Membership> loadRepresentativeMemberships(
+            List<Attendance> attendances, LocalDate today) {
+        Set<Long> memberIds = attendances.stream()
+                .map(attendance -> attendance.getMember().getId())
+                .collect(Collectors.toSet());
+        if (memberIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return membershipRepository.findByMemberIdInOrderByStartDateDescIdDesc(memberIds).stream()
+                .collect(Collectors.groupingBy(membership -> membership.getMember().getId()))
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey, entry -> pickRepresentative(entry.getValue(), today)));
+    }
+
+    /**
+     * 그리드에 보여줄 대표 이용권을 고른다.
+     * 이용중(만료일이 가장 늦은 것) > 예정(가장 빨리 시작하는 것) > 만료(가장 최근 것) 순.
+     * 갱신 구매로 기간이 겹치거나 선등록 건이 섞여 있어도 "지금 상태"가 먼저 보이게 하기 위한 순서다.
+     */
+    private Membership pickRepresentative(List<Membership> memberships, LocalDate today) {
+        if (memberships.isEmpty()) {
+            return null;
+        }
+
+        return memberships.stream()
+                .filter(membership -> MembershipPeriod.isActiveOn(membership, today))
+                .max(Comparator.comparing(Membership::getEndDate))
+                .or(() -> memberships.stream()
+                        .filter(membership -> today.isBefore(membership.getStartDate()))
+                        .min(Comparator.comparing(Membership::getStartDate)))
+                .or(() -> memberships.stream().max(Comparator.comparing(Membership::getEndDate)))
+                .orElse(null);
     }
 
     private void validateExactlyOneKey(AttendanceCheckInRequest request) {
