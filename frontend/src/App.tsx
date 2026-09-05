@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { AttendancePage } from './features/attendance/pages/AttendancePage';
 import { LoginPage } from './features/auth/pages/LoginPage';
+import { MembershipsPage } from './features/memberships/pages/MembershipsPage';
 import { useAuthStore } from './features/auth/store/authStore';
 
 // 아직 구현 전인 도메인 페이지 자리 표시
@@ -30,7 +31,7 @@ function App() {
         <Route path="/members" element={<PlaceholderPage title="회원관리" />} />
         <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/payments" element={<PlaceholderPage title="결제관리" />} />
-        <Route path="/memberships" element={<PlaceholderPage title="이용권관리" />} />
+        <Route path="/memberships" element={<MembershipsPage />} />
         <Route path="/pt-passes" element={<PlaceholderPage title="PT권관리" />} />
         <Route path="/pt-reservations" element={<PlaceholderPage title="PT예약" />} />
       </Route>

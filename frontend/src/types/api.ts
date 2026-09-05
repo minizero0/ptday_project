@@ -9,3 +9,14 @@ export interface ApiError {
   code: string;
   message: string;
 }
+
+// 백엔드 PageResponse 와 1:1 대응 (common/response/PageResponse)
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}

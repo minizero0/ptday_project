@@ -65,7 +65,8 @@ export function AdminLayout() {
         </nav>
       </aside>
 
-      <div className="flex min-h-screen flex-col lg:pl-60">
+      {/* h-screen 으로 높이를 확정해야 내부 h-full(상세 패널 꽉 채움)이 동작한다. 넘치는 내용은 main 에서 스크롤 */}
+      <div className="flex h-screen flex-col lg:pl-60">
         <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-border bg-surface px-4">
           <button
             type="button"
@@ -94,7 +95,7 @@ export function AdminLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-6">
+        <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
           <Outlet />
         </main>
       </div>

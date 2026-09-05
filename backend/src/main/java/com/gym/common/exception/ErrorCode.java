@@ -18,7 +18,12 @@ public enum ErrorCode {
 
     // 회원
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."),
-    DUPLICATE_MEMBER_NO(HttpStatus.CONFLICT, "이미 존재하는 회원번호입니다.");
+    DUPLICATE_MEMBER_NO(HttpStatus.CONFLICT, "이미 존재하는 회원번호입니다."),
+
+    // 이용권
+    MEMBERSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "이용권을 찾을 수 없습니다."),
+    MEMBERSHIP_END_DATE_REQUIRED(HttpStatus.BAD_REQUEST, "만료일을 입력하세요."),
+    INVALID_MEMBERSHIP_PERIOD(HttpStatus.BAD_REQUEST, "만료일은 시작일보다 빠를 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;

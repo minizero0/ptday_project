@@ -1,7 +1,13 @@
+import { useState } from 'react';
+import { Button } from '../../../components/Button';
+import { cn } from '../../../lib/cn';
+import { MembershipCreateModal } from '../../memberships/components/MembershipCreateModal';
+import { MembershipHistory } from '../../memberships/components/MembershipHistory';
+import { MembershipSummary } from '../../memberships/components/MembershipSummary';
 import { useMemberQuery } from '../hooks/useMember';
 
 interface MemberDetailPanelProps {
-  memberId: number;
+  memberId: number | null;
   onClose: () => void;
 }
 
@@ -24,46 +30,70 @@ function DetailRow({ label, value }: { label: string; value: string | null }) {
 }
 
 /**
- * 출석 그리드 행 클릭 시 열리는 회원 상세 패널.
- * lg 이상: 우측 고정 컬럼 / lg 미만: 화면 위로 덮는 슬라이드 패널.
+ * 회원 상세 패널.
+ * lg 이상: 항상 우측에 고정 표시 (미선택 시 안내 문구).
+ * lg 미만: 행을 선택했을 때만 화면 위로 덮는 슬라이드 패널.
  */
 export function MemberDetailPanel({ memberId, onClose }: MemberDetailPanelProps) {
   const { data: member, isLoading, isError } = useMemberQuery(memberId);
+  const [isCreateMembershipOpen, setIsCreateMembershipOpen] = useState(false);
+
+  const isSelected = memberId !== null;
 
   return (
     <>
       {/* lg 미만에서 뒷배경 클릭으로 닫기 */}
-      <button
-        type="button"
-        aria-label="상세 패널 닫기"
-        className="fixed inset-0 z-20 bg-black/30 lg:hidden"
-        onClick={onClose}
-      />
+      {isSelected && (
+        <button
+          type="button"
+          aria-label="상세 패널 닫기"
+          className="fixed inset-0 z-20 bg-black/30 lg:hidden"
+          onClick={onClose}
+        />
+      )}
 
       <aside
         aria-label="회원 상세"
-        className="fixed inset-y-0 right-0 z-30 w-80 overflow-y-auto border-l border-border bg-surface p-4 shadow-card lg:static lg:z-auto lg:h-fit lg:w-72 lg:shrink-0 lg:rounded-lg lg:border lg:shadow-none"
+        className={cn(
+          'w-80 shrink-0 overflow-y-auto border-border bg-surface p-4',
+          'lg:static lg:z-auto lg:block lg:h-full lg:rounded-lg lg:border lg:shadow-none xl:w-96',
+          isSelected
+            ? 'fixed inset-y-0 right-0 z-30 border-l shadow-card'
+            : 'hidden',
+        )}
       >
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-bold">회원 상세</h2>
-          <button
-            type="button"
-            aria-label="닫기"
-            className="rounded-md p-1 text-text-muted hover:bg-background hover:text-text-primary"
-            onClick={onClose}
-          >
-            ✕
-          </button>
+          {isSelected && (
+            <button
+              type="button"
+              aria-label="닫기"
+              className="rounded-md p-1 text-text-muted hover:bg-background hover:text-text-primary"
+              onClick={onClose}
+            >
+              ✕
+            </button>
+          )}
         </div>
 
-        {isLoading && <p className="py-8 text-center text-sm text-text-muted">불러오는 중...</p>}
-        {isError && (
-          <p className="py-8 text-center text-sm text-danger">
-            회원 정보를 불러오지 못했습니다.
-          </p>
+        {!isSelected && (
+          <div className="flex h-64 items-center justify-center">
+            <p className="text-center text-sm text-text-muted">
+              출석 목록에서 행을 클릭하면
+              <br />
+              회원 정보가 표시됩니다.
+            </p>
+          </div>
         )}
 
-        {member && (
+        {isSelected && isLoading && (
+          <p className="py-8 text-center text-sm text-text-muted">불러오는 중...</p>
+        )}
+        {isSelected && isError && (
+          <p className="py-8 text-center text-sm text-danger">회원 정보를 불러오지 못했습니다.</p>
+        )}
+
+        {isSelected && member && (
           <div>
             <div className="mb-3 rounded-md bg-background p-3">
               <p className="font-bold">{member.name}</p>
@@ -77,14 +107,29 @@ export function MemberDetailPanel({ memberId, onClose }: MemberDetailPanelProps)
               <DetailRow label="가입일" value={formatDate(member.createdAt)} />
             </dl>
 
-            {/* 2차(이용권)·3차(PT권) 도메인 구현 후 실데이터로 채운다 */}
+            <MembershipSummary memberId={member.id} />
+
+            <div className="mt-3 border-t border-border pt-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">이용권 이력</h3>
+                <Button size="sm" onClick={() => setIsCreateMembershipOpen(true)}>
+                  이용권 등록
+                </Button>
+              </div>
+              <MembershipHistory memberId={member.id} />
+            </div>
+            {/* PT권(3차) 도메인 구현 후 이력 목록으로 채운다 */}
             <div className="mt-4 border-t border-border pt-3">
-              <h3 className="text-sm font-semibold">이용권 · PT</h3>
+              <h3 className="text-sm font-semibold">PT권 이력</h3>
               <p className="mt-2 text-sm text-text-muted">준비 중입니다.</p>
             </div>
           </div>
         )}
       </aside>
+
+      {isCreateMembershipOpen && member && (
+        <MembershipCreateModal member={member} onClose={() => setIsCreateMembershipOpen(false)} />
+      )}
     </>
   );
 }
