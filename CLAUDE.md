@@ -30,7 +30,7 @@
 | Backend | Spring Boot 4.x, Java 17+, Spring Web(MVC), Spring Security, Spring Data JPA |
 | DB | PostgreSQL 15+ |
 | 인증 | JWT (Access + Refresh) |
-| 빌드/도구 | ESLint, Prettier (FE) / Gradle, Checkstyle (BE) |
+| 빌드/도구 | Vite, oxlint (FE) / Gradle (BE) |
 
 > 스택은 확정본이다. 임의로 다른 라이브러리를 도입하지 말 것. 필요하면 먼저 제안하고 승인받는다.
 
@@ -148,9 +148,12 @@ backend/src/main/java/com/gym/
 - 단건 없으면 예외 던지는 건 `getXxx`, Optional 반환은 `findXxx`로 구분.
 
 ### 4.4 포매팅
-- FE: **Prettier + ESLint** 설정을 따른다. 저장 시 자동 포맷.
+- FE: **oxlint** 설정을 따른다 (`npm --prefix frontend run lint`). 들여쓰기 2 spaces, 세미콜론 사용.
 - BE: 구글 자바 스타일 기준. 들여쓰기 4 spaces.
-- 커밋 전 린트/포맷 통과가 기본. 포맷 이슈로 리뷰 시간 낭비하지 않는다.
+- 커밋 전 린트 통과가 기본. 포맷 이슈로 리뷰 시간 낭비하지 않는다.
+
+> 포매터(Prettier)와 Java 정적 분석(Checkstyle)은 아직 도입하지 않았다.
+> 필요해지면 제안 후 도입하고 이 문서를 함께 갱신한다.
 
 ---
 
@@ -231,6 +234,18 @@ backend/src/main/java/com/gym/
 - 각 조각을 낸 뒤 **최소한의 검증 방법**을 함께 제시한다(빌드 통과, 해당 엔드포인트 curl 예시, 화면 확인 절차 등).
 - Backend 핵심 비즈니스 로직(횟수 차감, 만료 계산, 예약 중복)은 **단위 테스트를 우선** 작성한다.
 - "동작한다"고 말하기 전에 실제로 확인한 근거를 함께 밝힌다. 실패하면 그대로 보고한다.
+
+### 10.1 검증 명령 (고정)
+
+| 대상 | 명령 |
+| --- | --- |
+| Frontend 타입 | `npm --prefix frontend run typecheck` |
+| Frontend 린트 | `npm --prefix frontend run lint` |
+| Backend 컴파일 | `cd backend && ./gradlew compileJava` |
+
+> **`npx tsc --noEmit` 을 쓰지 말 것.** `tsconfig.json` 이 `files: []` + `references` 구조라
+> 참조를 따라가지 않고 "검사할 파일 0개"로 조용히 통과한다. 반드시 `-b`(build mode)를 쓰는
+> 위 `typecheck` 스크립트로 확인한다.
 
 ---
 
