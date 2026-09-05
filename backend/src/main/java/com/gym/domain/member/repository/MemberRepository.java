@@ -1,10 +1,13 @@
 package com.gym.domain.member.repository;
 
 import com.gym.domain.member.entity.Member;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
@@ -22,4 +25,16 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findByIdAndDeletedAtIsNull(Long id);
 
     Page<Member> findAllByDeletedAtIsNull(Pageable pageable);
+
+    // 출석 체크용: 회원번호로 활성 회원 조회
+    Optional<Member> findByMemberNoAndDeletedAtIsNull(String memberNo);
+
+    // 출석 체크용: 연락처 뒷자리가 일치하는 활성 회원 목록.
+    // 하이픈 등 표기 차이를 무시하기 위해 숫자만 남겨 비교한다. 중복 시 호출부에서 후보 선택 처리.
+    @Query("""
+            select m from Member m
+            where m.deletedAt is null
+              and replace(coalesce(m.phone, ''), '-', '') like concat('%', :digits)
+            """)
+    List<Member> findActiveByPhoneEndingWith(@Param("digits") String digits);
 }
