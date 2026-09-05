@@ -7,7 +7,8 @@ export default defineConfig({
   server: {
     // 개발 중 /api 요청을 백엔드로 프록시 → CORS 회피, 운영 nginx 프록시와 동일 구조 (CLAUDE.md §13.3)
     proxy: {
-      '/api': 'http://localhost:8080',
+      // 8080은 다른 로컬 앱(dims-metamind)이 점유 중 — gym 백엔드는 8081 사용
+      '/api': 'http://localhost:8081',
     },
   },
 })
