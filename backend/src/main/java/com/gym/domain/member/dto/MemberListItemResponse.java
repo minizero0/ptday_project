@@ -8,7 +8,7 @@ import java.time.LocalDate;
 
 /**
  * 회원 목록의 한 줄. 단건 응답(MemberResponse)과 달리 데스크에서 목록만 보고도
- * 이용권 상태를 알 수 있도록 대표 이용권 요약을 함께 담는다.
+ * 이용권 상태와 PT 잔여 횟수를 알 수 있도록 요약을 함께 담는다.
  * membership 은 이용권 이력이 없으면 null 이다.
  */
 public record MemberListItemResponse(
@@ -19,9 +19,12 @@ public record MemberListItemResponse(
         String gender,
         LocalDate birthDate,
         Instant createdAt,
-        MembershipSummaryResponse membership) {
+        MembershipSummaryResponse membership,
+        // 보유한 PT권들의 잔여 횟수 합계. PT권이 없으면 0
+        int ptRemainingCount) {
 
-    public static MemberListItemResponse from(Member member, Membership membership, LocalDate today) {
+    public static MemberListItemResponse from(
+            Member member, Membership membership, int ptRemainingCount, LocalDate today) {
         return new MemberListItemResponse(
                 member.getId(),
                 member.getMemberNo(),
@@ -30,6 +33,7 @@ public record MemberListItemResponse(
                 member.getGender(),
                 member.getBirthDate(),
                 member.getCreatedAt(),
-                membership != null ? MembershipSummaryResponse.from(membership, today) : null);
+                membership != null ? MembershipSummaryResponse.from(membership, today) : null,
+                ptRemainingCount);
     }
 }

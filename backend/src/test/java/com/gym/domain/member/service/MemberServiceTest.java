@@ -18,6 +18,7 @@ import com.gym.domain.member.repository.MemberRepository;
 import com.gym.domain.membership.entity.Membership;
 import com.gym.domain.membership.entity.MembershipPeriodStatus;
 import com.gym.domain.membership.service.RepresentativeMembershipFinder;
+import com.gym.domain.ptpass.service.PtRemainingCountFinder;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,9 @@ class MemberServiceTest {
 
     @Mock
     private RepresentativeMembershipFinder representativeMembershipFinder;
+
+    @Mock
+    private PtRemainingCountFinder ptRemainingCountFinder;
 
     @InjectMocks
     private MemberService memberService;
@@ -103,6 +107,7 @@ class MemberServiceTest {
         Membership active = new Membership(withMembership, today.minusDays(10), today.plusDays(20));
         when(representativeMembershipFinder.findByMemberIds(eq(Set.of(1L, 2L)), eq(today)))
                 .thenReturn(Map.of(1L, active));
+        when(ptRemainingCountFinder.findByMemberIds(Set.of(1L, 2L))).thenReturn(Map.of(1L, 12));
 
         // Act
         PageResponse<MemberListItemResponse> page = memberService.getMembers(null, pageable);
@@ -113,8 +118,10 @@ class MemberServiceTest {
         assertThat(first.membership().status()).isEqualTo(MembershipPeriodStatus.ACTIVE);
         assertThat(first.membership().endDate()).isEqualTo(today.plusDays(20));
         assertThat(first.membership().daysRemaining()).isEqualTo(20L);
-        // 이용권 이력이 없는 회원은 null
+        assertThat(first.ptRemainingCount()).isEqualTo(12);
+        // 이용권 이력이 없는 회원은 null, PT권이 없는 회원은 0회
         assertThat(page.content().get(1).membership()).isNull();
+        assertThat(page.content().get(1).ptRemainingCount()).isZero();
         assertThat(page.totalElements()).isEqualTo(2);
     }
 

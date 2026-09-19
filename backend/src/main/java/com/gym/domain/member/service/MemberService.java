@@ -13,6 +13,7 @@ import com.gym.domain.member.entity.Member;
 import com.gym.domain.member.repository.MemberRepository;
 import com.gym.domain.membership.entity.Membership;
 import com.gym.domain.membership.service.RepresentativeMembershipFinder;
+import com.gym.domain.ptpass.service.PtRemainingCountFinder;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -35,12 +36,15 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final RepresentativeMembershipFinder representativeMembershipFinder;
+    private final PtRemainingCountFinder ptRemainingCountFinder;
 
     public MemberService(
             MemberRepository memberRepository,
-            RepresentativeMembershipFinder representativeMembershipFinder) {
+            RepresentativeMembershipFinder representativeMembershipFinder,
+            PtRemainingCountFinder ptRemainingCountFinder) {
         this.memberRepository = memberRepository;
         this.representativeMembershipFinder = representativeMembershipFinder;
+        this.ptRemainingCountFinder = ptRemainingCountFinder;
     }
 
     @Transactional
@@ -67,14 +71,18 @@ public class MemberService {
     public PageResponse<MemberListItemResponse> getMembers(String keyword, Pageable pageable) {
         Page<Member> members = findActiveMembers(keyword, pageable);
 
-        // 한 페이지의 회원을 한 번에 조회한다(회원마다 이용권을 조회하면 N+1)
+        // 한 페이지의 회원을 한 번에 조회한다(회원마다 이용권·PT권을 조회하면 N+1)
         LocalDate today = BusinessTime.today();
         Set<Long> memberIds = members.stream().map(Member::getId).collect(Collectors.toSet());
         Map<Long, Membership> membershipByMemberId =
                 representativeMembershipFinder.findByMemberIds(memberIds, today);
+        Map<Long, Integer> ptRemainingByMemberId = ptRemainingCountFinder.findByMemberIds(memberIds);
 
-        return PageResponse.from(members.map(member ->
-                MemberListItemResponse.from(member, membershipByMemberId.get(member.getId()), today)));
+        return PageResponse.from(members.map(member -> MemberListItemResponse.from(
+                member,
+                membershipByMemberId.get(member.getId()),
+                ptRemainingByMemberId.getOrDefault(member.getId(), 0),
+                today)));
     }
 
     private Page<Member> findActiveMembers(String keyword, Pageable pageable) {
