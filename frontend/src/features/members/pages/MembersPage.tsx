@@ -17,7 +17,16 @@ import { useMemberPageQuery } from '../hooks/useMember';
 import type { Member, MemberListItem } from '../types/member';
 
 // 성별·생년월일은 행을 눌러 여는 상세에서 본다. 목록은 데스크에서 바로 필요한 이용권 상태를 우선한다.
-const GRID_COLUMNS = ['회원번호', '이름', '전화번호', '이용권', '이용 기간', '등록일', ''] as const;
+const GRID_COLUMNS = [
+  '회원번호',
+  '이름',
+  '전화번호',
+  '이용권',
+  '이용 기간',
+  'PT 잔여',
+  '등록일',
+  '',
+] as const;
 const SEARCH_DEBOUNCE_MS = 250;
 const EMPTY_VALUE = '-';
 const DELETE_FORBIDDEN_HINT = '회원 삭제는 관리자만 할 수 있습니다.';
@@ -163,6 +172,13 @@ export function MembersPage() {
                 </td>
                 <td className="px-4 py-3 text-text-muted">
                   {member.membership ? formatMembershipPeriod(member.membership) : EMPTY_VALUE}
+                </td>
+                <td className="px-4 py-3">
+                  {member.ptRemainingCount > 0 ? (
+                    `${member.ptRemainingCount}회`
+                  ) : (
+                    <span className="text-text-muted">{EMPTY_VALUE}</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-text-muted">{formatInstantDay(member.createdAt)}</td>
                 {/* 수정·삭제는 상세 패널을 여는 행 클릭과 별개의 동작이다 */}

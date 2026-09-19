@@ -14,6 +14,7 @@ export interface Member {
 // 회원 목록의 한 줄 (MemberListItemResponse). 목록만 보고도 이용권 상태를 알 수 있게 대표 이용권 요약이 붙는다.
 export interface MemberListItem extends Member {
   membership: RepresentativeMembership | null; // 이용권 이력이 없으면 null
+  ptRemainingCount: number; // 보유한 PT권들의 잔여 횟수 합계. PT권이 없으면 0
 }
 
 // 백엔드 MemberCreateRequest / MemberUpdateRequest 와 1:1 대응 (두 요청의 필드가 같다).

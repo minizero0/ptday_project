@@ -4,6 +4,7 @@ import { cn } from '../../../lib/cn';
 import { MembershipCreateModal } from '../../memberships/components/MembershipCreateModal';
 import { MembershipHistory } from '../../memberships/components/MembershipHistory';
 import { MembershipSummary } from '../../memberships/components/MembershipSummary';
+import { PtPassSection } from '../../pt-passes/components/PtPassSection';
 import { useMemberQuery } from '../hooks/useMember';
 
 interface MemberDetailPanelProps {
@@ -118,11 +119,7 @@ export function MemberDetailPanel({ memberId, onClose }: MemberDetailPanelProps)
               </div>
               <MembershipHistory member={member} />
             </div>
-            {/* PT권(3차) 도메인 구현 후 이력 목록으로 채운다 */}
-            <div className="mt-4 border-t border-border pt-3">
-              <h3 className="text-sm font-semibold">PT권 이력</h3>
-              <p className="mt-2 text-sm text-text-muted">준비 중입니다.</p>
-            </div>
+            <PtPassSection member={member} />
           </div>
         )}
       </aside>
