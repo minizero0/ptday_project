@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { Input } from '../../../components/Input';
@@ -6,16 +7,29 @@ import { useDebounce } from '../../../hooks/useDebounce';
 import { formatDay, formatInstantDay } from '../../../lib/date';
 import { useAuthStore } from '../../auth/store/authStore';
 import { ROLE_ADMIN } from '../../auth/types/auth';
+import { MembershipStatusBadge } from '../../memberships/components/MembershipStatusBadge';
+import type { RepresentativeMembership } from '../../memberships/types/membership';
 import { MemberCreateModal } from '../components/MemberCreateModal';
 import { MemberDeleteModal } from '../components/MemberDeleteModal';
+import { MemberDetailPanel } from '../components/MemberDetailPanel';
 import { MemberEditModal } from '../components/MemberEditModal';
 import { useMemberPageQuery } from '../hooks/useMember';
-import type { Member } from '../types/member';
+import type { Member, MemberListItem } from '../types/member';
 
-const GRID_COLUMNS = ['회원번호', '이름', '전화번호', '성별', '생년월일', '등록일', ''] as const;
+// 성별·생년월일은 행을 눌러 여는 상세에서 본다. 목록은 데스크에서 바로 필요한 이용권 상태를 우선한다.
+const GRID_COLUMNS = ['회원번호', '이름', '전화번호', '이용권', '이용 기간', '등록일', ''] as const;
 const SEARCH_DEBOUNCE_MS = 250;
 const EMPTY_VALUE = '-';
 const DELETE_FORBIDDEN_HINT = '회원 삭제는 관리자만 할 수 있습니다.';
+
+// 남은 일수는 서버가 계산해 준다 (이용중일 때만 값이 있다)
+function formatMembershipPeriod(membership: RepresentativeMembership): string {
+  const period = `${formatDay(membership.startDate)} ~ ${formatDay(membership.endDate)}`;
+  if (membership.daysRemaining === null) {
+    return period;
+  }
+  return `${period} · ${membership.daysRemaining === 0 ? '오늘 만료' : `D-${membership.daysRemaining}`}`;
+}
 
 export function MembersPage() {
   // 검색어·페이지는 화면 로컬 상태 (CLAUDE.md §6)
@@ -24,6 +38,8 @@ export function MembersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Member | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Member | null>(null);
+  // 행 클릭으로 선택된 회원. 같은 행을 다시 누르면 해제한다 (출석 현황과 같은 동작)
+  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
 
   // 화면 제어용일 뿐이다. 실제 권한은 서버가 DELETE 요청에서 다시 확인한다.
   const canDelete = useAuthStore((state) => state.role === ROLE_ADMIN);
@@ -35,7 +51,26 @@ export function MembersPage() {
   const { data, isPending, isPaused, isError } = useMemberPageQuery(debouncedKeyword, page);
 
   // 페이지에 한 명만 남은 상태에서 지우면 그 페이지가 사라지므로 앞 페이지로 옮긴다
+  const handleRowClick = (memberId: number) => {
+    setSelectedMemberId((current) => (current === memberId ? null : memberId));
+  };
+
+  // 마우스 없이도 행을 고를 수 있게 한다. 행 안의 버튼에서 올라온 키 입력은 그 버튼의 몫이다.
+  const handleRowKeyDown = (event: KeyboardEvent<HTMLTableRowElement>, memberId: number) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleRowClick(memberId);
+    }
+  };
+
   const handleDeleted = () => {
+    // 상세를 보고 있던 회원을 지웠다면 없는 회원을 조회하지 않도록 패널을 닫는다
+    if (deleteTarget?.id === selectedMemberId) {
+      setSelectedMemberId(null);
+    }
     const isLastRowOnPage = data?.content.length === 1;
     if (isLastRowOnPage && page > 0) {
       setPage(page - 1);
@@ -71,8 +106,9 @@ export function MembersPage() {
         </div>
       </div>
 
-      <Card className="min-h-0 flex-1 overflow-auto p-0">
-        <table className="w-full min-w-[840px] text-left text-sm">
+      <div className="flex min-h-0 flex-1 items-stretch gap-4">
+      <Card className="min-w-0 flex-1 overflow-auto p-0">
+        <table className="w-full whitespace-nowrap text-left text-sm">
           <thead>
             <tr className="border-b border-border text-text-muted">
               {GRID_COLUMNS.map((column) => (
@@ -104,18 +140,34 @@ export function MembersPage() {
                 </td>
               </tr>
             )}
-            {data?.content.map((member: Member) => (
-              <tr key={member.id} className="border-b border-border last:border-b-0">
+            {data?.content.map((member: MemberListItem) => (
+              <tr
+                key={member.id}
+                tabIndex={0}
+                aria-selected={selectedMemberId === member.id}
+                onClick={() => handleRowClick(member.id)}
+                onKeyDown={(event) => handleRowKeyDown(event, member.id)}
+                className={`cursor-pointer border-b border-border last:border-b-0 ${
+                  selectedMemberId === member.id ? 'bg-primary/10' : 'hover:bg-background'
+                }`}
+              >
                 <td className="px-4 py-3">{member.memberNo}</td>
                 <td className="px-4 py-3 font-medium">{member.name}</td>
                 <td className="px-4 py-3 text-text-muted">{member.phone ?? EMPTY_VALUE}</td>
-                <td className="px-4 py-3 text-text-muted">{member.gender ?? EMPTY_VALUE}</td>
+                <td className="px-4 py-3">
+                  {member.membership ? (
+                    <MembershipStatusBadge status={member.membership.status} />
+                  ) : (
+                    <span className="text-text-muted">없음</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-text-muted">
-                  {member.birthDate ? formatDay(member.birthDate) : EMPTY_VALUE}
+                  {member.membership ? formatMembershipPeriod(member.membership) : EMPTY_VALUE}
                 </td>
                 <td className="px-4 py-3 text-text-muted">{formatInstantDay(member.createdAt)}</td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-2 whitespace-nowrap">
+                {/* 수정·삭제는 상세 패널을 여는 행 클릭과 별개의 동작이다 */}
+                <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
+                  <div className="flex justify-end gap-2">
                     <Button variant="ghost" size="sm" onClick={() => setEditTarget(member)}>
                       수정
                     </Button>
@@ -136,6 +188,12 @@ export function MembersPage() {
           </tbody>
         </table>
       </Card>
+
+        <MemberDetailPanel
+          memberId={selectedMemberId}
+          onClose={() => setSelectedMemberId(null)}
+        />
+      </div>
 
       {data && data.totalPages > 0 && (
         <div className="flex items-center justify-center gap-3 text-sm">

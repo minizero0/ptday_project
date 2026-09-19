@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Button } from '../../../components/Button';
 import { Modal } from '../../../components/Modal';
 import { useUpdateMembershipMutation } from '../hooks/useMembership';
-import type { MembershipListItem, MembershipPeriodRequest } from '../types/membership';
+import type { MembershipEditTarget, MembershipPeriodRequest } from '../types/membership';
 import { MembershipFormFields } from './MembershipFormFields';
 
 interface MembershipEditModalProps {
-  membership: MembershipListItem;
+  membership: MembershipEditTarget;
   onClose: () => void;
 }
 

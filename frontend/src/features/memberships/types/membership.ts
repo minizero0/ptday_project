@@ -28,6 +28,25 @@ export interface MembershipListItem {
   daysRemaining: number | null; // 이용중이 아니면 null
 }
 
+// 이용권 수정 모달이 필요로 하는 값. 이용권 관리 목록(MembershipListItem)에서도,
+// 회원 상세의 이력(Membership + 회원 정보)에서도 열 수 있게 공통 부분만 요구한다.
+export interface MembershipEditTarget {
+  id: number;
+  memberNo: string;
+  memberName: string;
+  startDate: string; // yyyy-MM-dd
+  endDate: string; // yyyy-MM-dd
+}
+
+// 회원 한 줄에 붙는 이용권 요약 (MembershipSummaryResponse). 회원 목록이 대표 이용권 1건을 이 모양으로 내려준다.
+export interface RepresentativeMembership {
+  id: number;
+  status: MembershipPeriodStatus;
+  startDate: string; // yyyy-MM-dd
+  endDate: string; // yyyy-MM-dd
+  daysRemaining: number | null; // 이용중이 아니면 null, 만료일 당일이면 0
+}
+
 // 이용권 부여·수정 요청. 기간의 진실은 시작일·만료일 두 값뿐이다.
 // 개월 수는 만료일을 채우는 화면 계산 수단이라 서버로 보내지 않는다.
 export interface MembershipPeriodRequest {

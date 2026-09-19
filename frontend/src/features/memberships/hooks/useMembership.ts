@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import {
   getMembershipPage,
   getMemberships,
@@ -13,6 +14,16 @@ const membershipKeys = {
   list: (includeExpired: boolean, page: number) =>
     ['memberships', 'list', includeExpired, page] as const,
 };
+
+// 회원 목록과 출석 현황은 회원별 이용권 상태를 함께 담아 내려온다.
+// 이용권을 등록·수정하면 그 화면들의 배지도 낡으므로 같이 무효화한다.
+const MEMBERSHIP_DEPENDENT_QUERY_ROOTS = ['memberships', 'members', 'attendances'] as const;
+
+function invalidateMembershipDependents(queryClient: QueryClient) {
+  MEMBERSHIP_DEPENDENT_QUERY_ROOTS.forEach((root) => {
+    queryClient.invalidateQueries({ queryKey: [root] });
+  });
+}
 
 // 이용권 관리 목록 한 페이지 크기
 export const MEMBERSHIP_PAGE_SIZE = 20;
@@ -32,10 +43,7 @@ export function useGrantMembershipMutation(memberId: number) {
 
   return useMutation({
     mutationFn: (request: MembershipPeriodRequest) => grantMembership(memberId, request),
-    onSuccess: () => {
-      // 회원별 이력과 관리 목록이 모두 바뀌므로 이용권 쿼리 전체를 무효화한다
-      queryClient.invalidateQueries({ queryKey: ['memberships'] });
-    },
+    onSuccess: () => invalidateMembershipDependents(queryClient),
   });
 }
 
@@ -54,8 +62,6 @@ export function useUpdateMembershipMutation(membershipId: number) {
 
   return useMutation({
     mutationFn: (request: MembershipPeriodRequest) => updateMembership(membershipId, request),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['memberships'] });
-    },
+    onSuccess: () => invalidateMembershipDependents(queryClient),
   });
 }

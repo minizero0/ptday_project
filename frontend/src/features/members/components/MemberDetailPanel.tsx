@@ -79,7 +79,7 @@ export function MemberDetailPanel({ memberId, onClose }: MemberDetailPanelProps)
         {!isSelected && (
           <div className="flex h-64 items-center justify-center">
             <p className="text-center text-sm text-text-muted">
-              출석 목록에서 행을 클릭하면
+              목록에서 행을 클릭하면
               <br />
               회원 정보가 표시됩니다.
             </p>
@@ -116,7 +116,7 @@ export function MemberDetailPanel({ memberId, onClose }: MemberDetailPanelProps)
                   이용권 등록
                 </Button>
               </div>
-              <MembershipHistory memberId={member.id} />
+              <MembershipHistory member={member} />
             </div>
             {/* PT권(3차) 도메인 구현 후 이력 목록으로 채운다 */}
             <div className="mt-4 border-t border-border pt-3">

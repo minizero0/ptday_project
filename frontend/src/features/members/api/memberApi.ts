@@ -1,6 +1,6 @@
 import api from '../../../lib/api';
 import type { ApiResponse, PageResponse } from '../../../types/api';
-import type { Member, MemberSaveRequest } from '../types/member';
+import type { Member, MemberListItem, MemberSaveRequest } from '../types/member';
 
 // 회원 단건 조회 — 출석 그리드 행 클릭 시 상세 패널에서 사용
 export async function getMember(id: number): Promise<Member> {
@@ -27,12 +27,12 @@ export async function getMemberPage(
   keyword: string,
   page: number,
   size: number,
-): Promise<PageResponse<Member>> {
-  const { data } = await api.get<ApiResponse<PageResponse<Member>>>('/api/members', {
+): Promise<PageResponse<MemberListItem>> {
+  const { data } = await api.get<ApiResponse<PageResponse<MemberListItem>>>('/api/members', {
     // 빈 검색어는 파라미터에서 빼서 서버가 "검색 없음"으로 처리하게 한다
     params: { keyword: keyword || undefined, page, size, sort: MEMBER_LIST_SORT },
   });
-  return data.data as PageResponse<Member>;
+  return data.data as PageResponse<MemberListItem>;
 }
 
 // 회원 등록 — 회원번호는 서버가 채번해서 응답에 담아 준다

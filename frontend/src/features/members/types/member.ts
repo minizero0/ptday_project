@@ -1,3 +1,5 @@
+import type { RepresentativeMembership } from '../../memberships/types/membership';
+
 // 백엔드 MemberResponse 와 1:1 대응 (domain/member/dto/MemberResponse)
 export interface Member {
   id: number;
@@ -7,6 +9,11 @@ export interface Member {
   gender: string | null;
   birthDate: string | null; // yyyy-MM-dd
   createdAt: string; // ISO-8601 UTC — 표시할 때만 로컬 변환 (CLAUDE.md §5)
+}
+
+// 회원 목록의 한 줄 (MemberListItemResponse). 목록만 보고도 이용권 상태를 알 수 있게 대표 이용권 요약이 붙는다.
+export interface MemberListItem extends Member {
+  membership: RepresentativeMembership | null; // 이용권 이력이 없으면 null
 }
 
 // 백엔드 MemberCreateRequest / MemberUpdateRequest 와 1:1 대응 (두 요청의 필드가 같다).
