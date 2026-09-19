@@ -8,18 +8,27 @@ interface AuthState {
   username: string | null;
   role: string | null;
   isAuthenticated: boolean;
+  // 직접 로그아웃한 것이 아니라 세션이 만료돼 풀린 상태. 로그인 화면이 이유를 안내하는 데 쓴다.
+  isSessionExpired: boolean;
   setAuth: (response: LoginResponse) => void;
   logout: () => void;
+  expireSession: () => void;
 }
 
-type StoredSession = Pick<AuthState, 'accessToken' | 'username' | 'role' | 'isAuthenticated'>;
+type StoredSession = Pick<
+  AuthState,
+  'accessToken' | 'username' | 'role' | 'isAuthenticated' | 'isSessionExpired'
+>;
 
 const LOGGED_OUT_SESSION: StoredSession = {
   accessToken: null,
   username: null,
   role: null,
   isAuthenticated: false,
+  isSessionExpired: false,
 };
+
+const EXPIRED_SESSION: StoredSession = { ...LOGGED_OUT_SESSION, isSessionExpired: true };
 
 /**
  * 새로고침 후 로그인 상태 복원. 저장해 둔 것은 토큰 하나뿐이고 아이디·권한은 토큰에서 다시 읽는다 —
@@ -33,9 +42,14 @@ function restoreSession(): StoredSession {
   }
 
   const payload = decodeJwtPayload(token);
-  if (!payload || isJwtExpired(payload)) {
+  if (!payload) {
     localStorage.removeItem(TOKEN_KEY);
     return LOGGED_OUT_SESSION;
+  }
+  if (isJwtExpired(payload)) {
+    // 어제 로그인해 둔 화면을 다시 연 경우 등. 왜 로그인 화면인지 알 수 있게 만료로 표시한다.
+    localStorage.removeItem(TOKEN_KEY);
+    return EXPIRED_SESSION;
   }
 
   return {
@@ -43,6 +57,7 @@ function restoreSession(): StoredSession {
     username: payload.sub,
     role: payload.role,
     isAuthenticated: true,
+    isSessionExpired: false,
   };
 }
 
@@ -56,11 +71,18 @@ export const useAuthStore = create<AuthState>((set) => ({
       username: response.username,
       role: response.role,
       isAuthenticated: true,
+      isSessionExpired: false,
     });
   },
 
   logout: () => {
     localStorage.removeItem(TOKEN_KEY);
     set(LOGGED_OUT_SESSION);
+  },
+
+  // 사용 중 서버가 토큰 만료(401)를 알려왔을 때. 요청 여러 개가 동시에 401 을 받아 거듭 불려도 결과가 같다.
+  expireSession: () => {
+    localStorage.removeItem(TOKEN_KEY);
+    set(EXPIRED_SESSION);
   },
 }));

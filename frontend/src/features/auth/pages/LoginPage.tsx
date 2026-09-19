@@ -20,6 +20,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
   const setAuth = useAuthStore((state) => state.setAuth);
+  const isSessionExpired = useAuthStore((state) => state.isSessionExpired);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -49,6 +50,13 @@ export function LoginPage() {
           <h1 className="text-xl font-bold">ptday 관리자</h1>
           <p className="mt-1 text-sm text-text-muted">로그인하여 시작하세요</p>
         </div>
+
+        {/* 작업 도중 갑자기 이 화면으로 오면 당황하므로 이유를 알려준다. 직접 로그아웃한 경우에는 보이지 않는다 */}
+        {isSessionExpired && (
+          <p role="status" className="mb-4 rounded-md bg-background px-3 py-2 text-sm text-text-muted">
+            로그인이 만료되었습니다. 다시 로그인해 주세요.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <Input
