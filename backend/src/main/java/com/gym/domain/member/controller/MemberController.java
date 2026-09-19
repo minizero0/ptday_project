@@ -3,6 +3,7 @@ package com.gym.domain.member.controller;
 import com.gym.common.response.ApiResponse;
 import com.gym.common.response.PageResponse;
 import com.gym.domain.member.dto.MemberCreateRequest;
+import com.gym.domain.member.dto.MemberListItemResponse;
 import com.gym.domain.member.dto.MemberResponse;
 import com.gym.domain.member.dto.MemberUpdateRequest;
 import com.gym.domain.member.service.MemberService;
@@ -44,9 +45,9 @@ public class MemberController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<MemberResponse>>> getMembers(
+    public ResponseEntity<ApiResponse<PageResponse<MemberListItemResponse>>> getMembers(
             @RequestParam(required = false) String keyword, Pageable pageable) {
-        PageResponse<MemberResponse> response = memberService.getMembers(keyword, pageable);
+        PageResponse<MemberListItemResponse> response = memberService.getMembers(keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

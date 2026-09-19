@@ -3,22 +3,36 @@ package com.gym.domain.member.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.gym.common.response.PageResponse;
+import com.gym.common.util.BusinessTime;
 import com.gym.domain.member.dto.MemberCreateRequest;
+import com.gym.domain.member.dto.MemberListItemResponse;
 import com.gym.domain.member.dto.MemberResponse;
 import com.gym.domain.member.dto.MemberUpdateRequest;
 import com.gym.domain.member.entity.Member;
 import com.gym.domain.member.repository.MemberRepository;
+import com.gym.domain.membership.entity.Membership;
+import com.gym.domain.membership.entity.MembershipPeriodStatus;
+import com.gym.domain.membership.service.RepresentativeMembershipFinder;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class MemberServiceTest {
@@ -28,6 +42,9 @@ class MemberServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
+
+    @Mock
+    private RepresentativeMembershipFinder representativeMembershipFinder;
 
     @InjectMocks
     private MemberService memberService;
@@ -72,5 +89,58 @@ class MemberServiceTest {
 
         assertThat(member.getPhone()).isEqualTo("02-123-4567");
         assertThat(response.phone()).isEqualTo("02-123-4567");
+    }
+
+    @Test
+    void 회원_목록의_각_줄에_대표_이용권_요약을_담는다() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 20);
+        Member withMembership = member(1L, "김철수");
+        Member withoutMembership = member(2L, "이영희");
+        when(memberRepository.findAllByDeletedAtIsNull(pageable))
+                .thenReturn(new PageImpl<>(List.of(withMembership, withoutMembership), pageable, 2));
+        LocalDate today = BusinessTime.today();
+        Membership active = new Membership(withMembership, today.minusDays(10), today.plusDays(20));
+        when(representativeMembershipFinder.findByMemberIds(eq(Set.of(1L, 2L)), eq(today)))
+                .thenReturn(Map.of(1L, active));
+
+        // Act
+        PageResponse<MemberListItemResponse> page = memberService.getMembers(null, pageable);
+
+        // Assert
+        MemberListItemResponse first = page.content().get(0);
+        assertThat(first.name()).isEqualTo("김철수");
+        assertThat(first.membership().status()).isEqualTo(MembershipPeriodStatus.ACTIVE);
+        assertThat(first.membership().endDate()).isEqualTo(today.plusDays(20));
+        assertThat(first.membership().daysRemaining()).isEqualTo(20L);
+        // 이용권 이력이 없는 회원은 null
+        assertThat(page.content().get(1).membership()).isNull();
+        assertThat(page.totalElements()).isEqualTo(2);
+    }
+
+    @Test
+    void 검색_결과에도_대표_이용권_요약을_담는다() {
+        Pageable pageable = PageRequest.of(0, 20);
+        Member found = member(3L, "박민수");
+        when(memberRepository.searchActive("민수", "", pageable))
+                .thenReturn(new PageImpl<>(List.of(found), pageable, 1));
+        LocalDate today = BusinessTime.today();
+        Membership scheduled = new Membership(found, today.plusDays(3), today.plusDays(33));
+        when(representativeMembershipFinder.findByMemberIds(eq(Set.of(3L)), eq(today)))
+                .thenReturn(Map.of(3L, scheduled));
+
+        PageResponse<MemberListItemResponse> page = memberService.getMembers("민수", pageable);
+
+        MemberListItemResponse item = page.content().get(0);
+        assertThat(item.membership().status()).isEqualTo(MembershipPeriodStatus.SCHEDULED);
+        // 남은 일수는 이용중일 때만 의미가 있다
+        assertThat(item.membership().daysRemaining()).isNull();
+    }
+
+    private static Member member(long id, String name) {
+        Member member = new Member("26090000" + id, name, null, null, null);
+        // id 는 DB 가 채우는 값이라 세터가 없다. 회원별 매칭을 보려면 테스트에서만 직접 넣는다.
+        ReflectionTestUtils.setField(member, "id", id);
+        return member;
     }
 }
