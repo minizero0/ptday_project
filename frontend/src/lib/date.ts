@@ -23,12 +23,7 @@ export function addMonths(date: string, months: number): string {
 
 // 오늘 날짜를 yyyy-MM-dd 로. 폼 기본값용 (기기 로컬 기준)
 export function todayString(): string {
-  const now = new Date();
-  return [
-    String(now.getFullYear()).padStart(4, '0'),
-    String(now.getMonth() + 1).padStart(2, '0'),
-    String(now.getDate()).padStart(2, '0'),
-  ].join('-');
+  return toDateString(new Date());
 }
 
 // ISO-8601 UTC 시각 → 기기 로컬 날짜 (yyyy. MM. dd.). 시각 값은 표시할 때만 로컬로 바꾼다 (CLAUDE.md §5)
@@ -38,4 +33,38 @@ export function formatInstantDay(instant: string): string {
     month: '2-digit',
     day: '2-digit',
   });
+}
+
+// Date → yyyy-MM-dd (기기 로컬 기준). 서버에 날짜 파라미터로 보낼 때 쓴다.
+export function toDateString(date: Date): string {
+  return [
+    String(date.getFullYear()).padStart(4, '0'),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+// yyyy-MM-dd → 기기 로컬 자정의 Date. new Date('yyyy-MM-dd') 는 UTC 자정으로 읽혀 하루 밀릴 수 있다.
+export function parseDateString(date: string): Date {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+export function addDays(date: string, days: number): string {
+  const target = parseDateString(date);
+  target.setDate(target.getDate() + days);
+  return toDateString(target);
+}
+
+// 그 날짜가 속한 주의 월요일
+export function startOfWeek(date: string): string {
+  const MONDAY_BASED_OFFSET = 6;
+  const daysFromMonday = (parseDateString(date).getDay() + MONDAY_BASED_OFFSET) % 7;
+  return addDays(date, -daysFromMonday);
+}
+
+// ISO-8601 UTC 시각 → 기기 로컬 HH:mm
+export function formatInstantTime(instant: string): string {
+  const date = new Date(instant);
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }

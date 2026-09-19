@@ -2,13 +2,24 @@
 export interface PtPass {
   id: number;
   memberId: number;
+  sessionMinutes: SessionMinutes; // 1회 수업 길이. 부여 후 바뀌지 않고, 예약 길이를 결정한다
   totalCount: number; // 구매(부여) 횟수. 부여 후 바뀌지 않는다
   remainingCount: number; // 예약 차감·수동 조정으로만 움직인다
   createdAt: string; // ISO-8601 UTC — 표시할 때만 로컬 변환 (CLAUDE.md §5)
 }
 
-// 잔여 횟수가 바뀐 경로. PT 예약 도메인이 생기면 예약 차감·취소 복원이 추가된다.
-export type PtPassAdjustmentType = 'MANUAL';
+// 판매하는 수업 길이(분). 서버(PtPass.ALLOWED_SESSION_MINUTES)와 같은 값이다.
+export const SESSION_MINUTES_OPTIONS = [30, 40, 50, 60] as const;
+export type SessionMinutes = (typeof SESSION_MINUTES_OPTIONS)[number];
+
+// 잔여 횟수가 바뀐 경로: 직원의 수동 조정 / 예약 시 자동 차감 / 예약 취소 시 자동 복원
+export type PtPassAdjustmentType = 'MANUAL' | 'RESERVATION' | 'RESERVATION_CANCEL';
+
+export const ADJUSTMENT_TYPE_LABELS: Record<PtPassAdjustmentType, string> = {
+  MANUAL: '수동 조정',
+  RESERVATION: '예약 차감',
+  RESERVATION_CANCEL: '예약 취소 복원',
+};
 
 // 백엔드 PtPassAdjustmentResponse 와 1:1 대응. 추가만 되고 고쳐지지 않는 이력이다.
 export interface PtPassAdjustment {
@@ -22,6 +33,7 @@ export interface PtPassAdjustment {
 }
 
 export interface PtPassCreateRequest {
+  sessionMinutes: SessionMinutes;
   totalCount: number;
 }
 

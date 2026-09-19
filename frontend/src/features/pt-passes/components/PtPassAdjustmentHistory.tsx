@@ -1,4 +1,5 @@
 import { usePtPassAdjustmentsQuery } from '../hooks/usePtPass';
+import { ADJUSTMENT_TYPE_LABELS } from '../types/ptPass';
 import type { PtPassAdjustment } from '../types/ptPass';
 
 interface PtPassAdjustmentHistoryProps {
@@ -25,7 +26,9 @@ function AdjustmentItem({ adjustment }: { adjustment: PtPassAdjustment }) {
         <p className={`text-sm font-semibold ${isAddition ? 'text-success' : 'text-danger'}`}>
           {isAddition ? `+${adjustment.delta}` : adjustment.delta}회
         </p>
-        <p className="text-xs text-text-muted">잔여 {adjustment.remainingAfter}회</p>
+        <p className="text-xs text-text-muted">
+          {ADJUSTMENT_TYPE_LABELS[adjustment.type]} · 잔여 {adjustment.remainingAfter}회
+        </p>
       </div>
       <p className="mt-0.5 text-sm">{adjustment.reason}</p>
       <p className="mt-0.5 text-xs text-text-muted">

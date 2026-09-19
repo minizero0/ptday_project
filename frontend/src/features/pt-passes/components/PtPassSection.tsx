@@ -21,6 +21,9 @@ function PtPassItem({ ptPass, onAdjust }: PtPassItemProps) {
     <li className="flex items-center justify-between gap-2 py-2">
       <div>
         <p className="text-sm">
+          <span className="mr-1.5 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
+            {ptPass.sessionMinutes}분
+          </span>
           잔여 <span className="font-semibold">{ptPass.remainingCount}회</span>
           <span className="text-text-muted"> · 구매 {ptPass.totalCount}회</span>
         </p>
@@ -29,7 +32,7 @@ function PtPassItem({ ptPass, onAdjust }: PtPassItemProps) {
       <Button
         variant="ghost"
         size="sm"
-        aria-label={`구매 ${ptPass.totalCount}회 PT권(잔여 ${ptPass.remainingCount}회, ${formatInstantDay(ptPass.createdAt)} 등록) 조정·이력`}
+        aria-label={`${ptPass.sessionMinutes}분 구매 ${ptPass.totalCount}회 PT권(잔여 ${ptPass.remainingCount}회, ${formatInstantDay(ptPass.createdAt)} 등록) 조정·이력`}
         onClick={() => onAdjust(ptPass)}
       >
         조정·이력

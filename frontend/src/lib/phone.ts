@@ -42,3 +42,16 @@ export function formatPhone(value: string): string {
   const middleLength = digits.startsWith(MOBILE_PREFIX) || digits.length > 10 ? 4 : 3;
   return joinGroups(digits, [3, middleLength, 4]);
 }
+
+// 비워 두거나(선택 항목), 0 으로 시작하는 9~11자리 숫자여야 한다. 하이픈은 입력부가 자동으로 넣는다.
+export function isValidPhone(value: string): boolean {
+  if (value === '') {
+    return true;
+  }
+  const digits = extractDigits(value);
+  return (
+    digits.startsWith('0') &&
+    digits.length >= PHONE_MIN_DIGITS &&
+    digits.length <= PHONE_MAX_DIGITS
+  );
+}

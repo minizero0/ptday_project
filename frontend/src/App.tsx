@@ -5,6 +5,7 @@ import { LoginPage } from './features/auth/pages/LoginPage';
 import { MembersPage } from './features/members/pages/MembersPage';
 import { MembershipsPage } from './features/memberships/pages/MembershipsPage';
 import { useAuthStore } from './features/auth/store/authStore';
+import { PtReservationsPage } from './features/pt-reservations/pages/PtReservationsPage';
 
 // 아직 구현 전인 도메인 페이지 자리 표시
 function PlaceholderPage({ title }: { title: string }) {
@@ -34,7 +35,7 @@ function App() {
         <Route path="/payments" element={<PlaceholderPage title="결제관리" />} />
         <Route path="/memberships" element={<MembershipsPage />} />
         <Route path="/pt-passes" element={<PlaceholderPage title="PT권관리" />} />
-        <Route path="/pt-reservations" element={<PlaceholderPage title="PT예약" />} />
+        <Route path="/pt-reservations" element={<PtReservationsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

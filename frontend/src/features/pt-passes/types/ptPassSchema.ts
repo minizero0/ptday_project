@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { MAX_PT_COUNT } from './ptPass';
-import type { PtPassAdjustRequest } from './ptPass';
+import { MAX_PT_COUNT, SESSION_MINUTES_OPTIONS } from './ptPass';
+import type { PtPassAdjustRequest, SessionMinutes } from './ptPass';
 
 // FE 검증은 UX 보조. 최종 검증 책임은 백엔드 (CLAUDE.md §6)
 const countSchema = z
@@ -9,7 +9,17 @@ const countSchema = z
   .min(1, '횟수는 1회 이상이어야 합니다.')
   .max(MAX_PT_COUNT, `횟수는 ${MAX_PT_COUNT}회 이하여야 합니다.`);
 
-export const ptPassCreateSchema = z.object({ totalCount: countSchema });
+// 리터럴 union 으로 만들면 고르지 않았을 때 zod 기본 문구("expected 30")가 그대로 나온다.
+// PT 예약 폼도 같은 규칙을 쓴다.
+export const sessionMinutesSchema = z.custom<SessionMinutes>(
+  (value) => SESSION_MINUTES_OPTIONS.some((minutes) => minutes === value),
+  '수업 길이를 선택하세요.',
+);
+
+export const ptPassCreateSchema = z.object({
+  sessionMinutes: sessionMinutesSchema,
+  totalCount: countSchema,
+});
 
 export type PtPassCreateFormValues = z.infer<typeof ptPassCreateSchema>;
 

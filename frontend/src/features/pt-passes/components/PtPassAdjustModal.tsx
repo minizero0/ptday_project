@@ -65,6 +65,7 @@ export function PtPassAdjustModal({ member, ptPass, onClose }: PtPassAdjustModal
             <p className="text-xs text-text-muted">{member.memberNo}</p>
           </div>
           <p className="text-sm">
+            <span className="text-text-muted">{ptPass.sessionMinutes}분 · </span>
             잔여 <span className="font-semibold">{ptPass.remainingCount}회</span>
             <span className="text-text-muted"> · 구매 {ptPass.totalCount}회</span>
           </p>

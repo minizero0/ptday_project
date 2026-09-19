@@ -1,24 +1,11 @@
 import { z } from 'zod';
 import { todayString } from '../../../lib/date';
-import { PHONE_MAX_DIGITS, PHONE_MIN_DIGITS, extractDigits, formatPhone } from '../../../lib/phone';
+import { PHONE_MAX_DIGITS, extractDigits, formatPhone, isValidPhone } from '../../../lib/phone';
 import type { Member, MemberSaveRequest } from './member';
 
 // 서버 DTO(MemberCreateRequest / MemberUpdateRequest) 제약과 같은 값
 const NAME_MAX_LENGTH = 50;
 const PHONE_MAX_LENGTH = 20;
-
-// 비워 두거나(선택 항목), 0 으로 시작하는 9~11자리 숫자여야 한다. 하이픈은 입력부가 자동으로 넣는다.
-function isValidPhone(value: string): boolean {
-  if (value === '') {
-    return true;
-  }
-  const digits = extractDigits(value);
-  return (
-    digits.startsWith('0') &&
-    digits.length >= PHONE_MIN_DIGITS &&
-    digits.length <= PHONE_MAX_DIGITS
-  );
-}
 
 // 기존 데이터가 쓰는 저장 값. 빈 문자열은 "선택 안 함"
 export const GENDER_OPTIONS = ['남', '여'] as const;
