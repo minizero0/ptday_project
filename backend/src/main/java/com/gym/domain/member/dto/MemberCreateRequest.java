@@ -1,5 +1,6 @@
 package com.gym.domain.member.dto;
 
+import com.gym.common.validation.ValidPhoneNumber;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
@@ -14,6 +15,7 @@ public record MemberCreateRequest(
         String name,
 
         @Size(max = 20, message = "전화번호는 20자 이하여야 합니다.")
+        @ValidPhoneNumber
         String phone,
 
         @Size(max = 10)

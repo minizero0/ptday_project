@@ -3,6 +3,7 @@ package com.gym.domain.member.service;
 import com.gym.common.exception.BusinessException;
 import com.gym.common.exception.ErrorCode;
 import com.gym.common.response.PageResponse;
+import com.gym.common.util.PhoneNumber;
 import com.gym.domain.member.dto.MemberCreateRequest;
 import com.gym.domain.member.dto.MemberResponse;
 import com.gym.domain.member.dto.MemberUpdateRequest;
@@ -36,7 +37,8 @@ public class MemberService {
         Member member = new Member(
                 memberNo,
                 request.name(),
-                request.phone(),
+                // 하이픈 유무와 상관없이 받되 저장 표기는 하나로 맞춘다. 형식 검증은 DTO(@ValidPhoneNumber)가 이미 마쳤다.
+                PhoneNumber.normalize(request.phone()),
                 request.gender(),
                 request.birthDate());
         Member saved = memberRepository.save(member);
@@ -68,7 +70,11 @@ public class MemberService {
     public MemberResponse updateMember(Long id, MemberUpdateRequest request) {
         Member member = findActiveMember(id);
         // 변경 감지(dirty checking): 트랜잭션 커밋 시점에 자동 UPDATE 되므로 save() 불필요
-        member.updateInfo(request.name(), request.phone(), request.gender(), request.birthDate());
+        member.updateInfo(
+                request.name(),
+                PhoneNumber.normalize(request.phone()),
+                request.gender(),
+                request.birthDate());
         return MemberResponse.from(member);
     }
 
