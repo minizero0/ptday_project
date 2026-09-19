@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { AttendancePage } from './features/attendance/pages/AttendancePage';
 import { LoginPage } from './features/auth/pages/LoginPage';
+import { MembersPage } from './features/members/pages/MembersPage';
 import { MembershipsPage } from './features/memberships/pages/MembershipsPage';
 import { useAuthStore } from './features/auth/store/authStore';
 
@@ -28,7 +29,7 @@ function App() {
         element={isAuthenticated ? <AdminLayout /> : <Navigate to="/login" replace />}
       >
         <Route path="/" element={<AttendancePage />} />
-        <Route path="/members" element={<PlaceholderPage title="회원관리" />} />
+        <Route path="/members" element={<MembersPage />} />
         <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/payments" element={<PlaceholderPage title="결제관리" />} />
         <Route path="/memberships" element={<MembershipsPage />} />

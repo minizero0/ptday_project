@@ -30,3 +30,12 @@ export function todayString(): string {
     String(now.getDate()).padStart(2, '0'),
   ].join('-');
 }
+
+// ISO-8601 UTC 시각 → 기기 로컬 날짜 (yyyy. MM. dd.). 시각 값은 표시할 때만 로컬로 바꾼다 (CLAUDE.md §5)
+export function formatInstantDay(instant: string): string {
+  return new Date(instant).toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+}
