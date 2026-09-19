@@ -55,8 +55,9 @@ class PtPassServiceTest {
         when(memberRepository.findByIdAndDeletedAtIsNull(MEMBER_ID)).thenReturn(Optional.of(member));
         when(ptPassRepository.save(any(PtPass.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        PtPassResponse response = ptPassService.grant(MEMBER_ID, new PtPassCreateRequest(10));
+        PtPassResponse response = ptPassService.grant(MEMBER_ID, new PtPassCreateRequest(50, 10));
 
+        assertThat(response.sessionMinutes()).isEqualTo(50);
         assertThat(response.totalCount()).isEqualTo(10);
         assertThat(response.remainingCount()).isEqualTo(10);
     }
@@ -65,7 +66,7 @@ class PtPassServiceTest {
     void 없는_회원에게는_PT권을_부여할_수_없다() {
         when(memberRepository.findByIdAndDeletedAtIsNull(MEMBER_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> ptPassService.grant(MEMBER_ID, new PtPassCreateRequest(10)))
+        assertThatThrownBy(() -> ptPassService.grant(MEMBER_ID, new PtPassCreateRequest(50, 10)))
                 .isInstanceOf(BusinessException.class)
                 .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo(ErrorCode.MEMBER_NOT_FOUND);
@@ -74,7 +75,7 @@ class PtPassServiceTest {
 
     @Test
     void 횟수를_조정하면_잔여_횟수가_바뀌고_누가_왜_바꿨는지_이력이_남는다() {
-        PtPass ptPass = new PtPass(member(), 10);
+        PtPass ptPass = new PtPass(member(), 50, 10);
         when(ptPassRepository.findByIdForUpdate(PT_PASS_ID)).thenReturn(Optional.of(ptPass));
 
         PtPassResponse response =
@@ -95,7 +96,7 @@ class PtPassServiceTest {
 
     @Test
     void 잔여_횟수가_모자란_차감_조정은_거절되고_이력도_남지_않는다() {
-        PtPass ptPass = new PtPass(member(), 2);
+        PtPass ptPass = new PtPass(member(), 50, 2);
         when(ptPassRepository.findByIdForUpdate(PT_PASS_ID)).thenReturn(Optional.of(ptPass));
 
         assertThatThrownBy(() ->
@@ -121,7 +122,7 @@ class PtPassServiceTest {
     void 삭제된_회원의_PT권은_조정할_수_없다() {
         Member deleted = member();
         deleted.delete();
-        when(ptPassRepository.findByIdForUpdate(PT_PASS_ID)).thenReturn(Optional.of(new PtPass(deleted, 10)));
+        when(ptPassRepository.findByIdForUpdate(PT_PASS_ID)).thenReturn(Optional.of(new PtPass(deleted, 50, 10)));
 
         assertThatThrownBy(() ->
                 ptPassService.adjust(PT_PASS_ID, new PtPassAdjustRequest(1, "추가"), STAFF))
@@ -135,7 +136,7 @@ class PtPassServiceTest {
     void 회원의_PT권_목록을_조회한다() {
         Member member = member();
         when(memberRepository.findByIdAndDeletedAtIsNull(MEMBER_ID)).thenReturn(Optional.of(member));
-        PtPass used = new PtPass(member, 10);
+        PtPass used = new PtPass(member, 50, 10);
         used.deduct(4);
         when(ptPassRepository.findByMemberIdOrderByCreatedAtDescIdDesc(MEMBER_ID)).thenReturn(List.of(used));
 
@@ -147,7 +148,7 @@ class PtPassServiceTest {
 
     @Test
     void 조정_이력을_조회한다() {
-        PtPass ptPass = new PtPass(member(), 10);
+        PtPass ptPass = new PtPass(member(), 50, 10);
         ptPass.adjust(2);
         when(ptPassRepository.findById(PT_PASS_ID)).thenReturn(Optional.of(ptPass));
         when(ptPassAdjustmentRepository.findByPtPassIdOrderByCreatedAtDescIdDesc(PT_PASS_ID))

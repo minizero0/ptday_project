@@ -4,10 +4,13 @@ import com.gym.common.response.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -42,6 +45,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(ApiResponse.error(errorCode.name(), message));
+    }
+
+    /** 쿼리 파라미터 누락·형식 오류(날짜가 아닌 값 등)·읽을 수 없는 본문: 서버 오류가 아니라 요청 오류다. */
+    @ExceptionHandler({
+        MissingServletRequestParameterException.class,
+        MethodArgumentTypeMismatchException.class,
+        HttpMessageNotReadableException.class
+    })
+    public ResponseEntity<ApiResponse<Void>> handleMalformedRequest(Exception e) {
+        ErrorCode errorCode = ErrorCode.VALIDATION_ERROR;
+        log.warn("요청 형식 오류: {}", e.getMessage());
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(errorCode.name(), errorCode.getMessage()));
     }
 
     /** 매핑된 핸들러/리소스가 없는 경우: 500 이 아니라 404 로 응답한다. */

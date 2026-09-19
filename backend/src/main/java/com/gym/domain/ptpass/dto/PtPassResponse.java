@@ -6,6 +6,7 @@ import java.time.Instant;
 public record PtPassResponse(
         Long id,
         Long memberId,
+        int sessionMinutes,
         int totalCount,
         int remainingCount,
         Instant createdAt) {
@@ -14,6 +15,7 @@ public record PtPassResponse(
         return new PtPassResponse(
                 ptPass.getId(),
                 ptPass.getMember().getId(),
+                ptPass.getSessionMinutes(),
                 ptPass.getTotalCount(),
                 ptPass.getRemainingCount(),
                 ptPass.getCreatedAt());

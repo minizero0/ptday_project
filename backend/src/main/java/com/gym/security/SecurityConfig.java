@@ -63,6 +63,11 @@ public class SecurityConfig {
                         // PT 횟수 조정·이력도 관리자와 데스크 직원만
                         .requestMatchers("/api/pt-passes", "/api/pt-passes/**")
                         .hasAnyRole("ADMIN", "STAFF")
+                        // 트레이너 관리와 PT 예약도 관리자와 데스크 직원만
+                        .requestMatchers("/api/trainers", "/api/trainers/**")
+                        .hasAnyRole("ADMIN", "STAFF")
+                        .requestMatchers("/api/pt-reservations", "/api/pt-reservations/**")
+                        .hasAnyRole("ADMIN", "STAFF")
                         // 그 외 모든 요청은 인증만 되면 허용
                         .anyRequest().authenticated())
                 // 미인증 401, 권한 부족 403 을 통일 응답으로

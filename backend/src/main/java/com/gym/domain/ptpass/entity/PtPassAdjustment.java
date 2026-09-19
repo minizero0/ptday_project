@@ -25,6 +25,9 @@ import org.hibernate.annotations.CreationTimestamp;
         indexes = @Index(name = "idx_pt_pass_adjustment_pt_pass_id", columnList = "pt_pass_id"))
 public class PtPassAdjustment {
 
+    // 예약 1건은 PT 1회를 쓴다
+    public static final int RESERVATION_COUNT = 1;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -72,6 +75,18 @@ public class PtPassAdjustment {
     /** 이미 조정이 반영된 PT권을 받아 그 결과를 기록한다. */
     public static PtPassAdjustment manual(PtPass adjustedPtPass, int delta, String reason, String adjustedBy) {
         return new PtPassAdjustment(adjustedPtPass, PtPassAdjustmentType.MANUAL, delta, reason, adjustedBy);
+    }
+
+    /** 예약으로 이미 1회가 차감된 PT권을 받아 그 결과를 기록한다. */
+    public static PtPassAdjustment reservation(PtPass deductedPtPass, String reason, String adjustedBy) {
+        return new PtPassAdjustment(
+                deductedPtPass, PtPassAdjustmentType.RESERVATION, -RESERVATION_COUNT, reason, adjustedBy);
+    }
+
+    /** 예약 취소로 이미 1회가 복원된 PT권을 받아 그 결과를 기록한다. */
+    public static PtPassAdjustment reservationCancel(PtPass restoredPtPass, String reason, String adjustedBy) {
+        return new PtPassAdjustment(
+                restoredPtPass, PtPassAdjustmentType.RESERVATION_CANCEL, RESERVATION_COUNT, reason, adjustedBy);
     }
 
     public Long getId() {

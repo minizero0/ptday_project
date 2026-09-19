@@ -28,7 +28,21 @@ public enum ErrorCode {
     // PT권
     PT_PASS_NOT_FOUND(HttpStatus.NOT_FOUND, "PT권을 찾을 수 없습니다."),
     INSUFFICIENT_PT_COUNT(HttpStatus.CONFLICT, "PT 잔여 횟수가 부족합니다."),
-    PT_COUNT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "PT 잔여 횟수가 허용 범위를 넘습니다.");
+    PT_COUNT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "PT 잔여 횟수가 허용 범위를 넘습니다."),
+
+    // 트레이너
+    TRAINER_NOT_FOUND(HttpStatus.NOT_FOUND, "트레이너를 찾을 수 없습니다."),
+    TRAINER_INACTIVE(HttpStatus.CONFLICT, "비활성 트레이너에게는 예약할 수 없습니다."),
+
+    // PT 예약
+    PT_RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "PT 예약을 찾을 수 없습니다."),
+    PT_RESERVATION_ALREADY_CANCELED(HttpStatus.CONFLICT, "이미 취소된 예약입니다."),
+    INVALID_PT_RESERVATION_TIME(HttpStatus.BAD_REQUEST, "예약 시각은 영업 시간 안에서 10분 단위여야 합니다."),
+    INVALID_PT_RESERVATION_PERIOD(HttpStatus.BAD_REQUEST, "조회 기간은 시작일부터 종료일까지 31일 이내여야 합니다."),
+    PT_RESERVATION_IN_PAST(HttpStatus.BAD_REQUEST, "지난 시각에는 예약할 수 없습니다."),
+    NO_PT_PASS_FOR_SESSION(HttpStatus.CONFLICT, "해당 수업 길이의 잔여 PT권이 없습니다."),
+    TRAINER_TIME_CONFLICT(HttpStatus.CONFLICT, "해당 트레이너의 다른 예약과 시간이 겹칩니다."),
+    MEMBER_TIME_CONFLICT(HttpStatus.CONFLICT, "해당 회원의 다른 예약과 시간이 겹칩니다.");
 
     private final HttpStatus status;
     private final String message;

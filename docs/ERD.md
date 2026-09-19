@@ -100,6 +100,7 @@ account ──(0~1)── member ──< attendance
 | --- | --- | --- | --- |
 | id | bigint | PK | 자동증가 |
 | member_id | bigint | FK→member.id, not null | 보유 회원 |
+| session_minutes | int | not null, in (30,40,50,60) | 1회 수업 길이(분). PT권은 이 네 가지로 구분해 판매한다 |
 | total_count | int | not null | 구매(부여) 횟수. 부여 후 바뀌지 않는다 |
 | remaining_count | int | not null, check >= 0 | 잔여 횟수(음수 불가) |
 | created_at | timestamp | not null | 생성 시각(UTC) |
@@ -114,7 +115,7 @@ account ──(0~1)── member ──< attendance
 | --- | --- | --- | --- |
 | id | bigint | PK | 자동증가 |
 | pt_pass_id | bigint | FK→pt_pass.id, not null, index | 대상 PT권 |
-| type | varchar | not null | MANUAL(직원 수동 조정). 예약 도메인 도입 시 예약 차감/취소 복원 추가 |
+| type | varchar | not null | MANUAL(직원 수동 조정) / RESERVATION(예약 차감) / RESERVATION_CANCEL(예약 취소 복원) |
 | delta | int | not null, <> 0 | 증감 횟수(+2, -1) |
 | remaining_after | int | not null, check >= 0 | 반영 직후 잔여 횟수(이력만으로 흐름을 읽기 위함) |
 | reason | varchar | not null | 사유 |
@@ -129,6 +130,8 @@ account ──(0~1)── member ──< attendance
 | id | bigint | PK | 자동증가 |
 | name | varchar | not null | 이름 |
 | phone | varchar | nullable | 연락처 |
+| active | boolean | not null | 재직 여부. 예약 기록이 참조하므로 지우지 않고 비활성 처리한다 |
+| created_at | timestamp | not null | 생성 시각(UTC) |
 
 > 트레이너 로그인이 필요해지면 `member`와 동일하게 `account_id`(nullable)를 추가한다(현재 미도입).
 
@@ -139,11 +142,18 @@ account ──(0~1)── member ──< attendance
 | pt_pass_id | bigint | FK→pt_pass.id, not null | 차감 대상 PT권 |
 | member_id | bigint | FK→member.id, not null | 예약 회원 |
 | trainer_id | bigint | FK→trainer.id, not null | 담당 트레이너 |
-| start_time | timestamp | not null | 예약 시작(UTC) |
-| end_time | timestamp | not null | 예약 종료(UTC) |
-| status | varchar | not null | RESERVED / DONE / CANCELED |
+| start_time | timestamp | not null | 예약 시작(UTC). 영업 시간대 기준 10분 단위 |
+| end_time | timestamp | not null | 예약 종료(UTC) = 시작 + PT권의 session_minutes |
+| status | varchar | not null | RESERVED / CANCELED. "완료" 상태는 쓰임새가 생기면 추가한다 |
+| created_by | varchar | not null | 예약을 넣은 계정 아이디(서버가 채운다) |
+| created_at | timestamp | not null | 예약 등록 시각(UTC) |
+| canceled_at | timestamp | nullable | 취소 시각(UTC) |
 
-> 동일 트레이너의 시간 중복 예약을 서버에서 검증한다(동시성 주의).
+> 예약하는 순간 PT권에서 1회를 차감하고, 취소하면 항상 1회를 복원한다. 둘 다 `pt_pass_adjustment` 에 남는다.
+> 취소하지 않은 예약(노쇼 포함)은 차감이 유지된다.
+> 회원이 길이가 다른 PT권을 여럿 가지면 예약 시 수업 길이를 고르고, 그 길이의 PT권 중 먼저 산 것부터 차감한다.
+> 같은 트레이너·같은 회원의 시간이 겹치는 예약은 서버에서 검증하고, 동시 요청에 대비해
+> DB 배타 제약(exclude using gist, 취소건 제외)으로도 막는다.
 
 ---
 

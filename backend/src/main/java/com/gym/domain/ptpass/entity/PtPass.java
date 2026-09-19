@@ -15,10 +15,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Set;
 import org.hibernate.annotations.CreationTimestamp;
 
 /**
  * PT권 (docs/ERD.md §3.6). 한 회원이 여러 번 구매할 수 있는 1:N 이력이며 유효 기간은 없다.
+ * 1회 수업 길이(sessionMinutes)로 구분해 판매하며, 예약은 이 길이만큼의 시간을 차지한다.
  * 구매 횟수(totalCount)는 부여 후 바뀌지 않고, 잔여 횟수(remainingCount)만 예약 차감·수동 조정으로 움직인다.
  * 잔여 횟수가 음수가 되지 않는다는 규칙을 이 엔티티가 직접 지킨다 (CLAUDE.md §9).
  */
@@ -29,6 +31,8 @@ public class PtPass {
     // 한 번에 부여하거나 보유할 수 있는 횟수 상한. 오타(10 → 1000)로 인한 사고를 막는 안전장치다.
     public static final int MAX_PT_COUNT = 999;
     private static final int MIN_PT_COUNT = 1;
+    // 판매하는 수업 길이(분). DB check 제약(pt_pass_session_minutes_check)과 같은 값이다.
+    public static final Set<Integer> ALLOWED_SESSION_MINUTES = Set.of(30, 40, 50, 60);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,6 +41,9 @@ public class PtPass {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
+
+    @Column(name = "session_minutes", nullable = false, updatable = false)
+    private int sessionMinutes;
 
     @Column(name = "total_count", nullable = false, updatable = false)
     private int totalCount;
@@ -52,12 +59,16 @@ public class PtPass {
         // JPA 전용 기본 생성자
     }
 
-    public PtPass(Member member, int totalCount) {
+    public PtPass(Member member, int sessionMinutes, int totalCount) {
+        if (!ALLOWED_SESSION_MINUTES.contains(sessionMinutes)) {
+            throw new IllegalArgumentException("판매하지 않는 수업 길이입니다. sessionMinutes=" + sessionMinutes);
+        }
         if (totalCount < MIN_PT_COUNT || totalCount > MAX_PT_COUNT) {
             throw new IllegalArgumentException(
                     "PT 횟수는 " + MIN_PT_COUNT + "~" + MAX_PT_COUNT + " 사이여야 합니다. totalCount=" + totalCount);
         }
         this.member = member;
+        this.sessionMinutes = sessionMinutes;
         this.totalCount = totalCount;
         this.remainingCount = totalCount;
     }
@@ -71,6 +82,21 @@ public class PtPass {
             throw new InsufficientPtCountException();
         }
         this.remainingCount -= count;
+    }
+
+    /** 예약 취소에 따른 복원. 차감했던 만큼만 돌려주므로 구매 횟수와 무관하게 잔여 횟수만 늘린다. */
+    public void restore(int count) {
+        if (count < MIN_PT_COUNT) {
+            throw new IllegalArgumentException("복원 횟수는 1 이상이어야 합니다. count=" + count);
+        }
+        if (remainingCount + count > MAX_PT_COUNT) {
+            throw new BusinessException(ErrorCode.PT_COUNT_LIMIT_EXCEEDED);
+        }
+        this.remainingCount += count;
+    }
+
+    public boolean hasRemaining() {
+        return remainingCount > 0;
     }
 
     /**
@@ -97,6 +123,10 @@ public class PtPass {
 
     public Member getMember() {
         return member;
+    }
+
+    public int getSessionMinutes() {
+        return sessionMinutes;
     }
 
     public int getTotalCount() {

@@ -40,7 +40,7 @@ public class PtPassService {
     @Transactional
     public PtPassResponse grant(Long memberId, PtPassCreateRequest request) {
         Member member = getActiveMember(memberId);
-        PtPass saved = ptPassRepository.save(new PtPass(member, request.totalCount()));
+        PtPass saved = ptPassRepository.save(new PtPass(member, request.sessionMinutes(), request.totalCount()));
         return PtPassResponse.from(saved);
     }
 
