@@ -60,6 +60,9 @@ public class SecurityConfig {
                         // 이용권 관리 화면(전체 목록)도 관리자와 데스크 직원만
                         .requestMatchers("/api/memberships", "/api/memberships/**")
                         .hasAnyRole("ADMIN", "STAFF")
+                        // PT 횟수 조정·이력도 관리자와 데스크 직원만
+                        .requestMatchers("/api/pt-passes", "/api/pt-passes/**")
+                        .hasAnyRole("ADMIN", "STAFF")
                         // 그 외 모든 요청은 인증만 되면 허용
                         .anyRequest().authenticated())
                 // 미인증 401, 권한 부족 403 을 통일 응답으로

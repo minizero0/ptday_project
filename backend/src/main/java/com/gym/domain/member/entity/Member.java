@@ -73,6 +73,10 @@ public class Member {
         this.deletedAt = Instant.now();
     }
 
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
     public Long getId() {
         return id;
     }

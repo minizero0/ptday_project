@@ -7,7 +7,7 @@
 
 ## 1. 개요
 
-8개 테이블. `member`(회원)를 중심 허브로, 각 도메인 기능이 `member`를 참조한다.
+9개 테이블. `member`(회원)를 중심 허브로, 각 도메인 기능이 `member`를 참조한다.
 로그인 주체(관리자/직원/트레이너/회원)는 `account`로 통합하고 `role`로 구분한다.
 
 ```
@@ -15,6 +15,7 @@ account ──(0~1)── member ──< attendance
                     │  ├──< payment
                     │  ├──< membership
                     │  ├──< pt_pass ──< pt_reservation >── trainer
+                    │  │      └──< pt_pass_adjustment
                     │  └──< pt_reservation
 ```
 
@@ -99,11 +100,28 @@ account ──(0~1)── member ──< attendance
 | --- | --- | --- | --- |
 | id | bigint | PK | 자동증가 |
 | member_id | bigint | FK→member.id, not null | 보유 회원 |
-| total_count | int | not null | 총 PT 횟수 |
-| remaining_count | int | not null | 잔여 횟수(음수 불가) |
+| total_count | int | not null | 구매(부여) 횟수. 부여 후 바뀌지 않는다 |
+| remaining_count | int | not null, check >= 0 | 잔여 횟수(음수 불가) |
 | created_at | timestamp | not null | 생성 시각(UTC) |
 
 > 차감 시 음수 방지 검증(`InsufficientPtCountException`), `@Transactional`로 원자성 보장(CLAUDE.md §7, §9).
+> 유효 기간은 두지 않는다. 잔여 횟수는 예약 시 자동 차감되거나 직원이 수동 조정한다.
+> 수동 조정은 `remaining_count` 만 바꾼다 — `total_count` 는 "몇 회짜리를 샀는가"라는 사실로 고정하고,
+> 늘거나 준 근거는 `pt_pass_adjustment` 에 남긴다.
+
+### 3.6.1 pt_pass_adjustment — PT 횟수 변동 이력
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| id | bigint | PK | 자동증가 |
+| pt_pass_id | bigint | FK→pt_pass.id, not null, index | 대상 PT권 |
+| type | varchar | not null | MANUAL(직원 수동 조정). 예약 도메인 도입 시 예약 차감/취소 복원 추가 |
+| delta | int | not null, <> 0 | 증감 횟수(+2, -1) |
+| remaining_after | int | not null, check >= 0 | 반영 직후 잔여 횟수(이력만으로 흐름을 읽기 위함) |
+| reason | varchar | not null | 사유 |
+| adjusted_by | varchar | not null | 처리한 계정 아이디. 서버가 로그인 정보에서 채운다(입력값 아님) |
+| created_at | timestamp | not null | 처리 시각(UTC) |
+
+> 이력은 추가만 한다(수정·삭제 없음). 회원과 횟수로 다툼이 생겼을 때의 근거다.
 
 ### 3.7 trainer — 트레이너
 | 컬럼 | 타입 | 제약 | 설명 |
@@ -141,6 +159,7 @@ account ──(0~1)── member ──< attendance
 | member — pt_reservation | 1 : N | 회원의 예약 |
 | trainer — pt_reservation | 1 : N | 트레이너 담당 예약 |
 | pt_pass — pt_reservation | 1 : N | 예약 시 해당 PT권 차감 |
+| pt_pass — pt_pass_adjustment | 1 : N | PT권의 횟수 변동 이력 |
 
 ---
 

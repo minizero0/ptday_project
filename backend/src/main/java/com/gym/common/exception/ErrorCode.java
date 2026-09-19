@@ -23,7 +23,12 @@ public enum ErrorCode {
     // 이용권
     MEMBERSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "이용권을 찾을 수 없습니다."),
     MEMBERSHIP_END_DATE_REQUIRED(HttpStatus.BAD_REQUEST, "만료일을 입력하세요."),
-    INVALID_MEMBERSHIP_PERIOD(HttpStatus.BAD_REQUEST, "만료일은 시작일보다 빠를 수 없습니다.");
+    INVALID_MEMBERSHIP_PERIOD(HttpStatus.BAD_REQUEST, "만료일은 시작일보다 빠를 수 없습니다."),
+
+    // PT권
+    PT_PASS_NOT_FOUND(HttpStatus.NOT_FOUND, "PT권을 찾을 수 없습니다."),
+    INSUFFICIENT_PT_COUNT(HttpStatus.CONFLICT, "PT 잔여 횟수가 부족합니다."),
+    PT_COUNT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "PT 잔여 횟수가 허용 범위를 넘습니다.");
 
     private final HttpStatus status;
     private final String message;
