@@ -8,6 +8,20 @@ export interface PtPass {
   createdAt: string; // ISO-8601 UTC — 표시할 때만 로컬 변환 (CLAUDE.md §5)
 }
 
+// PT권 관리 목록의 한 줄 (PtPassListItemResponse). 어느 회원 것인지 함께 담는다.
+export interface PtPassListItem extends PtPass {
+  memberNo: string;
+  memberName: string;
+}
+
+// PT권 관리 목록의 검색 조건. 빈 문자열은 "조건 없음"이다.
+export interface PtPassSearchFilter {
+  includeExhausted: boolean; // 다 쓴 PT권까지 볼지
+  name: string; // 회원 이름(부분 일치)
+  purchasedFrom: string; // 구매일 시작 yyyy-MM-dd (포함)
+  purchasedTo: string; // 구매일 종료 yyyy-MM-dd (포함)
+}
+
 // 판매하는 수업 길이(분). 서버(PtPass.ALLOWED_SESSION_MINUTES)와 같은 값이다.
 export const SESSION_MINUTES_OPTIONS = [30, 40, 50, 60] as const;
 export type SessionMinutes = (typeof SESSION_MINUTES_OPTIONS)[number];

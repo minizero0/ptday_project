@@ -1,16 +1,37 @@
 import api from '../../../lib/api';
-import type { ApiResponse } from '../../../types/api';
+import type { ApiResponse, PageResponse } from '../../../types/api';
 import type {
   PtPass,
   PtPassAdjustment,
   PtPassAdjustRequest,
   PtPassCreateRequest,
+  PtPassListItem,
+  PtPassSearchFilter,
 } from '../types/ptPass';
 
 // 회원의 PT권 목록 — 최근 구매분이 위로 내려온다
 export async function getPtPasses(memberId: number): Promise<PtPass[]> {
   const { data } = await api.get<ApiResponse<PtPass[]>>(`/api/members/${memberId}/pt-passes`);
   return data.data as PtPass[];
+}
+
+// PT권 관리 목록 — 최근 구매순. 비어 있는 검색 조건은 보내지 않는다.
+export async function getPtPassPage(
+  filter: PtPassSearchFilter,
+  page: number,
+  size: number,
+): Promise<PageResponse<PtPassListItem>> {
+  const { data } = await api.get<ApiResponse<PageResponse<PtPassListItem>>>('/api/pt-passes', {
+    params: {
+      includeExhausted: filter.includeExhausted,
+      name: filter.name || undefined,
+      purchasedFrom: filter.purchasedFrom || undefined,
+      purchasedTo: filter.purchasedTo || undefined,
+      page,
+      size,
+    },
+  });
+  return data.data as PageResponse<PtPassListItem>;
 }
 
 // PT권 부여

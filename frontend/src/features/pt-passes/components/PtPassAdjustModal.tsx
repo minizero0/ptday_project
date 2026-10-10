@@ -19,7 +19,8 @@ import type { AdjustDirection, PtPassAdjustFormValues } from '../types/ptPassSch
 import { PtPassAdjustmentHistory } from './PtPassAdjustmentHistory';
 
 interface PtPassAdjustModalProps {
-  member: Member;
+  // 표시용 이름·회원번호만 쓴다 — 회원 상세에서도, PT권 관리 목록의 한 줄에서도 열 수 있게
+  member: Pick<Member, 'name' | 'memberNo'>;
   ptPass: PtPass;
   onClose: () => void;
 }

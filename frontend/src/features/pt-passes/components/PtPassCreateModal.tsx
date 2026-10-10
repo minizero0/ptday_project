@@ -1,9 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Button } from '../../../components/Button';
 import { Input } from '../../../components/Input';
 import { Modal } from '../../../components/Modal';
 import { getApiErrorMessage } from '../../../lib/apiError';
+import { MemberPicker } from '../../members/components/MemberPicker';
 import type { Member } from '../../members/types/member';
 import { useGrantPtPassMutation } from '../hooks/usePtPass';
 import { SESSION_MINUTES_OPTIONS } from '../types/ptPass';
@@ -11,7 +13,8 @@ import { ptPassCreateSchema } from '../types/ptPassSchema';
 import type { PtPassCreateFormValues } from '../types/ptPassSchema';
 
 interface PtPassCreateModalProps {
-  member: Member;
+  // 회원이 이미 정해진 곳(회원 상세)에서 열면 검색 단계를 건너뛰고 그 회원으로 고정한다.
+  member?: Member;
   onClose: () => void;
 }
 
@@ -20,6 +23,8 @@ const PT_COUNT_PRESETS = [10, 20, 30, 50] as const;
 const GRANT_ERROR_FALLBACK = 'PT권 등록에 실패했습니다. 잠시 후 다시 시도해주세요.';
 
 export function PtPassCreateModal({ member, onClose }: PtPassCreateModalProps) {
+  const isMemberFixed = member !== undefined;
+  const [selectedMember, setSelectedMember] = useState<Member | null>(member ?? null);
   const {
     register,
     control,
@@ -28,19 +33,33 @@ export function PtPassCreateModal({ member, onClose }: PtPassCreateModalProps) {
     formState: { errors },
   } = useForm<PtPassCreateFormValues>({ resolver: zodResolver(ptPassCreateSchema) });
 
-  const grantMutation = useGrantPtPassMutation(member.id);
+  const grantMutation = useGrantPtPassMutation(selectedMember?.id ?? -1);
 
   const onSubmit = (values: PtPassCreateFormValues) => {
+    if (!selectedMember) {
+      return;
+    }
     grantMutation.mutate(values, { onSuccess: onClose });
   };
 
   return (
     <Modal title="PT권 등록" onClose={onClose}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-        <div className="rounded-md bg-background px-3 py-2">
-          <p className="text-sm font-semibold">{member.name}</p>
-          <p className="text-xs text-text-muted">{member.memberNo}</p>
-        </div>
+        {selectedMember ? (
+          <div className="flex items-center justify-between rounded-md bg-background px-3 py-2">
+            <div>
+              <p className="text-sm font-semibold">{selectedMember.name}</p>
+              <p className="text-xs text-text-muted">{selectedMember.memberNo}</p>
+            </div>
+            {!isMemberFixed && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>
+                변경
+              </Button>
+            )}
+          </div>
+        ) : (
+          <MemberPicker onSelect={setSelectedMember} />
+        )}
 
         <Controller
           control={control}
@@ -114,7 +133,7 @@ export function PtPassCreateModal({ member, onClose }: PtPassCreateModalProps) {
           <Button type="button" variant="ghost" onClick={onClose}>
             취소
           </Button>
-          <Button type="submit" isLoading={grantMutation.isPending}>
+          <Button type="submit" disabled={!selectedMember} isLoading={grantMutation.isPending}>
             등록
           </Button>
         </div>
