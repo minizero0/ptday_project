@@ -25,12 +25,6 @@ export function formatMinutes(minutesOfDay: number): string {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
-// 'HH:mm' → 하루 중 몇 분째인지
-export function parseMinutes(time: string): number {
-  const [hour, minute] = time.split(':').map(Number);
-  return hour * MINUTES_PER_HOUR + minute;
-}
-
 // 시각(ISO 또는 Date) → 기기 로컬 기준 하루 중 몇 분째인지
 export function toMinutesOfDay(date: Date): number {
   return date.getHours() * MINUTES_PER_HOUR + date.getMinutes();
@@ -43,12 +37,24 @@ export function toInstant(date: string, minutesOfDay: number): string {
   return target.toISOString();
 }
 
-// 예약 시작으로 고를 수 있는 시각: 06:00 ~ 22:50, 10분 간격.
-// 가장 짧은 수업도 영업 종료를 넘기는 시각(22:40 이후)은 폼 검증이 걸러 낸다.
-export const START_TIME_OPTIONS = Array.from(
-  { length: (CLOSING_MINUTES - OPENING_MINUTES) / START_MINUTE_STEP },
-  (_, index) => formatMinutes(OPENING_MINUTES + index * START_MINUTE_STEP),
+// 예약 시작으로 고를 수 있는 분: 00 ~ 50, 10분 간격. 시(hour)는 TIMETABLE_HOURS 를 그대로 쓴다.
+// 수업이 영업 종료를 넘기는 조합(예: 22시 40분 + 30분 수업)은 폼 검증이 걸러 낸다.
+export const START_MINUTE_OPTIONS = Array.from(
+  { length: MINUTES_PER_HOUR / START_MINUTE_STEP },
+  (_, index) => index * START_MINUTE_STEP,
 );
+
+// 시·분 → 하루 중 몇 분째인지
+export function toMinutes(hour: number, minute: number): number {
+  return hour * MINUTES_PER_HOUR + minute;
+}
+
+// 시간표 칸을 누르지 않고 예약을 열 때의 기본 시작 시각: 지금 이후 가장 가까운 10분 단위.
+// 영업 시간 밖이면 여는 시각으로 둔다 — 직원이 모달에서 고른다.
+export function nextStartMinutes(now: Date): number {
+  const next = (Math.floor(toMinutesOfDay(now) / START_MINUTE_STEP) + 1) * START_MINUTE_STEP;
+  return next >= OPENING_MINUTES && next < CLOSING_MINUTES ? next : OPENING_MINUTES;
+}
 
 // yyyy-MM-dd → '9/21 (월)'
 export function formatDayLabel(date: string): string {

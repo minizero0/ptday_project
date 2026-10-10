@@ -15,10 +15,11 @@ import { useCreatePtReservationMutation } from '../hooks/usePtReservation';
 import { ptReservationCreateSchema } from '../types/ptReservationSchema';
 import type { PtReservationCreateFormValues } from '../types/ptReservationSchema';
 import {
-  START_TIME_OPTIONS,
+  START_MINUTE_OPTIONS,
+  TIMETABLE_HOURS,
   formatMinutes,
-  parseMinutes,
   toInstant,
+  toMinutes,
 } from '../types/timetable';
 
 interface PtReservationCreateModalProps {
@@ -33,6 +34,7 @@ interface SessionOption {
   remainingCount: number;
 }
 
+const MINUTES_PER_HOUR = 60;
 const CREATE_ERROR_FALLBACK = 'PT 예약에 실패했습니다. 잠시 후 다시 시도해주세요.';
 
 // 회원이 가진 PT권을 수업 길이별로 묶는다. 잔여가 남은 길이만 예약할 수 있다.
@@ -65,13 +67,23 @@ export function PtReservationCreateModal({
     formState: { errors },
   } = useForm<PtReservationCreateFormValues>({
     resolver: zodResolver(ptReservationCreateSchema),
-    defaultValues: { date: initialDate, time: formatMinutes(initialMinutes) },
+    defaultValues: {
+      date: initialDate,
+      hour: Math.floor(initialMinutes / MINUTES_PER_HOUR),
+      minute: initialMinutes % MINUTES_PER_HOUR,
+    },
   });
 
-  const [time, sessionMinutes] = useWatch({ control, name: ['time', 'sessionMinutes'] });
+  const [hour, minute, sessionMinutes] = useWatch({
+    control,
+    name: ['hour', 'minute', 'sessionMinutes'],
+  });
   const sessionOptions = ptPasses ? toSessionOptions(ptPasses) : [];
-  const endTimeLabel =
-    time && sessionMinutes ? formatMinutes(parseMinutes(time) + sessionMinutes) : null;
+  const startMinutes = toMinutes(hour, minute);
+  const timeError = errors.hour?.message ?? errors.minute?.message;
+  const timeSelectClassName = `w-full rounded-md border bg-surface px-3 py-2 text-sm ${
+    timeError ? 'border-danger' : 'border-border'
+  }`;
 
   const handleMemberChange = (next: Member | null) => {
     setMember(next);
@@ -89,7 +101,7 @@ export function PtReservationCreateModal({
         memberId: member.id,
         trainerId: trainer.id,
         sessionMinutes: values.sessionMinutes,
-        startTime: toInstant(values.date, parseMinutes(values.time)),
+        startTime: toInstant(values.date, toMinutes(values.hour, values.minute)),
       },
       { onSuccess: onClose },
     );
@@ -103,29 +115,48 @@ export function PtReservationCreateModal({
           <p className="text-sm font-semibold">{trainer.name}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="날짜" type="date" error={errors.date?.message} {...register('date')} />
-          <div>
-            <label htmlFor="pt-reservation-time" className="mb-1 block text-sm font-medium">
-              시작 시각
-            </label>
-            <select
-              id="pt-reservation-time"
-              aria-invalid={errors.time ? true : undefined}
-              className={`w-full rounded-md border bg-surface px-3 py-2 text-sm ${
-                errors.time ? 'border-danger' : 'border-border'
-              }`}
-              {...register('time')}
-            >
-              {START_TIME_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+        <Input label="날짜" type="date" error={errors.date?.message} {...register('date')} />
+
+        <fieldset>
+          <legend className="mb-1 text-sm font-medium">시작 시각</legend>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="pt-reservation-hour" className="sr-only">
+                시작 시간
+              </label>
+              <select
+                id="pt-reservation-hour"
+                aria-invalid={timeError ? true : undefined}
+                className={timeSelectClassName}
+                {...register('hour', { valueAsNumber: true })}
+              >
+                {TIMETABLE_HOURS.map((option) => (
+                  <option key={option} value={option}>
+                    {String(option).padStart(2, '0')}시
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="pt-reservation-minute" className="sr-only">
+                시작 분
+              </label>
+              <select
+                id="pt-reservation-minute"
+                aria-invalid={timeError ? true : undefined}
+                className={timeSelectClassName}
+                {...register('minute', { valueAsNumber: true })}
+              >
+                {START_MINUTE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {String(option).padStart(2, '0')}분
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
-        {errors.time && <p className="-mt-2 text-sm text-danger">{errors.time.message}</p>}
+          {timeError && <p className="mt-1 text-sm text-danger">{timeError}</p>}
+        </fieldset>
 
         {member ? (
           <div className="flex items-center justify-between rounded-md bg-background px-3 py-2">
@@ -192,11 +223,11 @@ export function PtReservationCreateModal({
           />
         )}
 
-        {endTimeLabel && (
+        {sessionMinutes && (
           <p className="rounded-md bg-background px-3 py-2 text-sm">
             <span className="text-text-muted">예약 시간 </span>
             <span className="font-semibold">
-              {time} ~ {endTimeLabel}
+              {formatMinutes(startMinutes)} ~ {formatMinutes(startMinutes + sessionMinutes)}
             </span>
             <span className="text-text-muted"> · 등록하면 PT 1회가 차감됩니다 (먼저 산 PT권부터)</span>
           </p>

@@ -8,7 +8,7 @@ import { PtReservationDetailModal } from '../components/PtReservationDetailModal
 import { WeekTimetable } from '../components/WeekTimetable';
 import { usePtReservationsQuery } from '../hooks/usePtReservation';
 import type { PtReservation } from '../types/ptReservation';
-import { DAYS_PER_WEEK } from '../types/timetable';
+import { DAYS_PER_WEEK, nextStartMinutes } from '../types/timetable';
 
 interface SlotSelection {
   date: string;
@@ -50,6 +50,14 @@ export function PtReservationsPage() {
   // 상세 모달은 목록에서 다시 찾은 최신 값을 본다. 다른 직원이 먼저 취소해 목록에서 빠지면 모달도 닫힌다.
   const selectedReservation =
     reservationsQuery.data?.find((reservation) => reservation.id === selectedReservationId) ?? null;
+
+  // 시간표 칸을 누르지 않고 여는 등록. 보고 있는 주가 이번 주면 오늘, 아니면 그 주의 첫날로 채운다.
+  const handleCreateClick = () => {
+    setSlotSelection({
+      date: isThisWeek ? todayString() : weekStart,
+      minutesOfDay: nextStartMinutes(now),
+    });
+  };
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -109,6 +117,10 @@ export function PtReservationsPage() {
             onClick={() => setWeekStart(addDays(weekStart, DAYS_PER_WEEK))}
           >
             ▶
+          </Button>
+
+          <Button disabled={!trainer} onClick={handleCreateClick}>
+            예약 등록
           </Button>
         </div>
       </div>
