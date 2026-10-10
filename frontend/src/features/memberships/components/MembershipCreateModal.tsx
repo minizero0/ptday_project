@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { Button } from '../../../components/Button';
-import { Input } from '../../../components/Input';
 import { Modal } from '../../../components/Modal';
-import { useDebounce } from '../../../hooks/useDebounce';
 import { addMonths, todayString } from '../../../lib/date';
-import { useMemberSearchQuery } from '../../members/hooks/useMember';
+import { MemberPicker } from '../../members/components/MemberPicker';
 import type { Member } from '../../members/types/member';
 import { useGrantMembershipMutation } from '../hooks/useMembership';
 import type { MembershipPeriodRequest } from '../types/membership';
@@ -17,7 +15,6 @@ interface MembershipCreateModalProps {
 }
 
 const DEFAULT_MONTHS = 1;
-const SEARCH_DEBOUNCE_MS = 250;
 
 // 서버가 내려준 친절한 메시지를 그대로 보여준다 (CLAUDE.md §7.2)
 function toErrorMessage(error: unknown): string {
@@ -27,15 +24,11 @@ function toErrorMessage(error: unknown): string {
 
 export function MembershipCreateModal({ member, onClose }: MembershipCreateModalProps) {
   const isMemberFixed = member !== undefined;
-  const [keyword, setKeyword] = useState('');
   const [selectedMember, setSelectedMember] = useState<Member | null>(member ?? null);
   const [form, setForm] = useState<MembershipPeriodRequest>(() => {
     const startDate = todayString();
     return { startDate, endDate: addMonths(startDate, DEFAULT_MONTHS) };
   });
-
-  const debouncedKeyword = useDebounce(keyword, SEARCH_DEBOUNCE_MS);
-  const { data: searchResult, isFetching } = useMemberSearchQuery(debouncedKeyword);
 
   const grantMutation = useGrantMembershipMutation(selectedMember?.id ?? -1);
 
@@ -64,43 +57,7 @@ export function MembershipCreateModal({ member, onClose }: MembershipCreateModal
             )}
           </div>
         ) : (
-          <div>
-            <Input
-              label="회원 검색"
-              placeholder="이름, 회원번호, 전화번호"
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-            />
-            <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-border">
-              {keyword.trim().length === 0 && (
-                <p className="px-3 py-4 text-center text-sm text-text-muted">
-                  검색어를 입력하세요.
-                </p>
-              )}
-              {keyword.trim().length > 0 && isFetching && (
-                <p className="px-3 py-4 text-center text-sm text-text-muted">검색 중...</p>
-              )}
-              {keyword.trim().length > 0 && !isFetching && searchResult?.content.length === 0 && (
-                <p className="px-3 py-4 text-center text-sm text-text-muted">
-                  검색 결과가 없습니다.
-                </p>
-              )}
-              {!isFetching &&
-                searchResult?.content.map((member) => (
-                  <button
-                    key={member.id}
-                    type="button"
-                    onClick={() => setSelectedMember(member)}
-                    className="flex w-full items-center justify-between border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-background"
-                  >
-                    <span className="text-sm font-medium">{member.name}</span>
-                    <span className="text-xs text-text-muted">
-                      {member.memberNo} · {member.phone ?? '-'}
-                    </span>
-                  </button>
-                ))}
-            </div>
-          </div>
+          <MemberPicker onSelect={setSelectedMember} />
         )}
 
         <MembershipFormFields value={form} onChange={setForm} />
