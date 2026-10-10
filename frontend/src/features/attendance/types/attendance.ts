@@ -16,6 +16,7 @@ export interface AttendanceMembership {
   status: MembershipPeriodStatus;
   startDate: string; // yyyy-MM-dd
   endDate: string; // yyyy-MM-dd
+  daysRemaining: number | null; // 만료까지 남은 일수. 이용중이 아니면 null (만료일 당일이면 0)
 }
 
 export interface AttendanceListResponse {

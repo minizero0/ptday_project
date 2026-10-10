@@ -17,11 +17,11 @@ export function useDailyAttendancesQuery(date: string) {
 
 // 출석 체크. 기록이 생기면(CHECKED_IN) 해당 날짜 현황을 다시 불러온다.
 // CANDIDATES(후보 선택 대기)는 아직 기록이 없으므로 invalidate 하지 않는다.
-export function useCheckInMutation(date: string) {
+export function useCheckInMutation(date: string, isKioskScreen = false) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (request: CheckInRequest) => checkIn(request),
+    mutationFn: (request: CheckInRequest) => checkIn(request, isKioskScreen),
     onSuccess: (result) => {
       if (result.status === 'CHECKED_IN') {
         queryClient.invalidateQueries({ queryKey: attendanceKeys.daily(date) });

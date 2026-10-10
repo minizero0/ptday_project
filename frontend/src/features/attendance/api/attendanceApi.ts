@@ -14,8 +14,14 @@ export async function getDailyAttendances(date: string): Promise<AttendanceListR
   return data.data as AttendanceListResponse;
 }
 
-// 출석 체크: 회원번호 / 연락처 뒷 4자리 / 후보 확정(memberId) 중 하나
-export async function checkIn(request: CheckInRequest): Promise<CheckInResult> {
-  const { data } = await api.post<ApiResponse<CheckInResult>>('/api/attendances', request);
+// 출석 체크: 회원번호 / 연락처 뒷 4자리 / 후보 확정(memberId) 중 하나.
+// isKioskScreen 이면 회원이 직접 보는 화면이므로 서버가 후보의 이름을 가려서 내려준다.
+export async function checkIn(
+  request: CheckInRequest,
+  isKioskScreen: boolean,
+): Promise<CheckInResult> {
+  const { data } = await api.post<ApiResponse<CheckInResult>>('/api/attendances', request, {
+    params: { kiosk: isKioskScreen || undefined },
+  });
   return data.data as CheckInResult;
 }

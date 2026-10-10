@@ -1,10 +1,12 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { AttendancePage } from './features/attendance/pages/AttendancePage';
+import { KioskPage } from './features/attendance/pages/KioskPage';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { MembersPage } from './features/members/pages/MembersPage';
 import { MembershipsPage } from './features/memberships/pages/MembershipsPage';
 import { useAuthStore } from './features/auth/store/authStore';
+import { ROLE_KIOSK } from './features/auth/types/auth';
 import { PtPassesPage } from './features/pt-passes/pages/PtPassesPage';
 import { PtReservationsPage } from './features/pt-reservations/pages/PtReservationsPage';
 
@@ -18,18 +20,39 @@ function PlaceholderPage({ title }: { title: string }) {
   );
 }
 
+interface AdminRouteProps {
+  isAuthenticated: boolean;
+  isKioskAccount: boolean;
+}
+
+function AdminRoute({ isAuthenticated, isKioskAccount }: AdminRouteProps) {
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  if (isKioskAccount) {
+    return <Navigate to="/kiosk" replace />;
+  }
+  return <AdminLayout />;
+}
+
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  // 입구 키오스크 계정은 출석 화면만 쓴다. 관리 화면 주소로 들어와도 출석 화면으로 돌려보낸다.
+  // (화면 제어일 뿐이고, 실제 접근 차단은 서버 권한 규칙이 한다)
+  const isKioskAccount = useAuthStore((state) => state.role) === ROLE_KIOSK;
+  const homePath = isKioskAccount ? '/kiosk' : '/';
 
   return (
     <Routes>
       <Route
         path="/login"
-        element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
+        element={isAuthenticated ? <Navigate to={homePath} replace /> : <LoginPage />}
       />
       <Route
-        element={isAuthenticated ? <AdminLayout /> : <Navigate to="/login" replace />}
-      >
+        path="/kiosk"
+        element={isAuthenticated ? <KioskPage /> : <Navigate to="/login" replace />}
+      />
+      <Route element={<AdminRoute isAuthenticated={isAuthenticated} isKioskAccount={isKioskAccount} />}>
         <Route path="/" element={<AttendancePage />} />
         <Route path="/members" element={<MembersPage />} />
         <Route path="/attendance" element={<AttendancePage />} />
