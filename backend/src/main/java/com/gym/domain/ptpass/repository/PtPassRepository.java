@@ -2,9 +2,12 @@ package com.gym.domain.ptpass.repository;
 
 import com.gym.domain.ptpass.entity.PtPass;
 import jakarta.persistence.LockModeType;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -32,6 +35,34 @@ public interface PtPassRepository extends JpaRepository<PtPass, Long> {
             + "and p.remainingCount > 0 order by p.createdAt asc, p.id asc")
     List<Long> findReservableIds(
             @Param("memberId") Long memberId, @Param("sessionMinutes") int sessionMinutes);
+
+    /**
+     * PT권 관리 목록: 최근 구매순. includeExhausted 가 false 면 잔여 횟수가 남은 것만 본다.
+     * 조건이 없는 검색어·기간은 부르는 쪽이 빈 문자열·넓은 범위로 채워 준다 —
+     * null 파라미터는 PostgreSQL 이 타입을 추론하지 못해 "is null" 분기를 쓸 수 없다.
+     * member 는 목록에 회원번호·이름을 함께 내리므로 fetch join 한다(ManyToOne 이라 페이징 안전).
+     *
+     * @param purchasedFrom 구매 시각 하한(포함)
+     * @param purchasedBefore 구매 시각 상한(미포함)
+     */
+    @Query(
+            value = "select p from PtPass p join fetch p.member mem "
+                    + "where mem.deletedAt is null "
+                    + "  and (:includeExhausted = true or p.remainingCount > 0) "
+                    + "  and lower(mem.name) like lower(concat('%', :name, '%')) "
+                    + "  and p.createdAt >= :purchasedFrom and p.createdAt < :purchasedBefore "
+                    + "order by p.createdAt desc, p.id desc",
+            countQuery = "select count(p) from PtPass p "
+                    + "where p.member.deletedAt is null "
+                    + "  and (:includeExhausted = true or p.remainingCount > 0) "
+                    + "  and lower(p.member.name) like lower(concat('%', :name, '%')) "
+                    + "  and p.createdAt >= :purchasedFrom and p.createdAt < :purchasedBefore")
+    Page<PtPass> search(
+            @Param("includeExhausted") boolean includeExhausted,
+            @Param("name") String name,
+            @Param("purchasedFrom") Instant purchasedFrom,
+            @Param("purchasedBefore") Instant purchasedBefore,
+            Pageable pageable);
 
     /** 회원 목록용: 여러 회원의 잔여 횟수 합계를 한 번에 가져온다(회원마다 조회하면 N+1). */
     @Query("select p.member.id as memberId, sum(p.remainingCount) as remainingCount "

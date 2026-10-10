@@ -27,6 +27,7 @@ public enum ErrorCode {
 
     // PT권
     PT_PASS_NOT_FOUND(HttpStatus.NOT_FOUND, "PT권을 찾을 수 없습니다."),
+    INVALID_PT_PASS_SEARCH_PERIOD(HttpStatus.BAD_REQUEST, "구매일 종료일은 시작일보다 빠를 수 없습니다."),
     INSUFFICIENT_PT_COUNT(HttpStatus.CONFLICT, "PT 잔여 횟수가 부족합니다."),
     PT_COUNT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "PT 잔여 횟수가 허용 범위를 넘습니다."),
 

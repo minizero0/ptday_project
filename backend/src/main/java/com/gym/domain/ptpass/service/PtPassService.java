@@ -2,19 +2,26 @@ package com.gym.domain.ptpass.service;
 
 import com.gym.common.exception.BusinessException;
 import com.gym.common.exception.ErrorCode;
+import com.gym.common.response.PageResponse;
+import com.gym.common.util.BusinessTime;
 import com.gym.domain.member.entity.Member;
 import com.gym.domain.member.repository.MemberRepository;
 import com.gym.domain.ptpass.dto.PtPassAdjustRequest;
 import com.gym.domain.ptpass.dto.PtPassAdjustmentResponse;
 import com.gym.domain.ptpass.dto.PtPassCreateRequest;
+import com.gym.domain.ptpass.dto.PtPassListItemResponse;
 import com.gym.domain.ptpass.dto.PtPassResponse;
 import com.gym.domain.ptpass.entity.PtPass;
 import com.gym.domain.ptpass.entity.PtPassAdjustment;
 import com.gym.domain.ptpass.repository.PtPassAdjustmentRepository;
 import com.gym.domain.ptpass.repository.PtPassRepository;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class PtPassService {
 
     private static final Logger log = LoggerFactory.getLogger(PtPassService.class);
+
+    // 구매일 조건이 없을 때 쓰는 범위. 쿼리에 null 을 넘기지 않기 위한 값이다.
+    private static final Instant UNBOUNDED_FROM = Instant.EPOCH;
+    private static final Instant UNBOUNDED_BEFORE = Instant.parse("9999-12-31T00:00:00Z");
 
     private final PtPassRepository ptPassRepository;
     private final PtPassAdjustmentRepository ptPassAdjustmentRepository;
@@ -50,6 +61,38 @@ public class PtPassService {
         return ptPassRepository.findByMemberIdOrderByCreatedAtDescIdDesc(memberId).stream()
                 .map(PtPassResponse::from)
                 .toList();
+    }
+
+    /**
+     * PT권 관리 목록. 기본은 잔여 횟수가 남은 PT권만, includeExhausted 를 켜면 다 쓴 것까지 본다.
+     * 어느 쪽이든 최근 구매순이다.
+     *
+     * @param name 회원 이름 검색어(부분 일치). null·공백이면 조건 없음
+     * @param purchasedFrom 구매일 시작(포함). null 이면 조건 없음
+     * @param purchasedTo 구매일 종료(포함). null 이면 조건 없음
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<PtPassListItemResponse> getPtPasses(
+            boolean includeExhausted,
+            String name,
+            LocalDate purchasedFrom,
+            LocalDate purchasedTo,
+            Pageable pageable) {
+        if (purchasedFrom != null && purchasedTo != null && purchasedTo.isBefore(purchasedFrom)) {
+            throw new BusinessException(ErrorCode.INVALID_PT_PASS_SEARCH_PERIOD);
+        }
+
+        // 구매일은 영업 시간대(한국)의 하루로 자른다. 종료일은 그날 끝까지 포함하도록 다음날 0시 직전까지 본다.
+        Instant from = purchasedFrom == null
+                ? UNBOUNDED_FROM
+                : purchasedFrom.atStartOfDay(BusinessTime.ZONE).toInstant();
+        Instant before = purchasedTo == null
+                ? UNBOUNDED_BEFORE
+                : purchasedTo.plusDays(1).atStartOfDay(BusinessTime.ZONE).toInstant();
+        String keyword = name == null ? "" : name.trim();
+
+        Page<PtPass> page = ptPassRepository.search(includeExhausted, keyword, from, before, pageable);
+        return PageResponse.from(page.map(PtPassListItemResponse::from));
     }
 
     /**

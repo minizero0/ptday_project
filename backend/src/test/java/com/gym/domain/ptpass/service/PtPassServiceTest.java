@@ -3,17 +3,20 @@ package com.gym.domain.ptpass.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.gym.common.exception.BusinessException;
 import com.gym.common.exception.ErrorCode;
+import com.gym.common.response.PageResponse;
 import com.gym.domain.member.entity.Member;
 import com.gym.domain.member.repository.MemberRepository;
 import com.gym.domain.ptpass.dto.PtPassAdjustRequest;
 import com.gym.domain.ptpass.dto.PtPassAdjustmentResponse;
 import com.gym.domain.ptpass.dto.PtPassCreateRequest;
+import com.gym.domain.ptpass.dto.PtPassListItemResponse;
 import com.gym.domain.ptpass.dto.PtPassResponse;
 import com.gym.domain.ptpass.entity.PtPass;
 import com.gym.domain.ptpass.entity.PtPassAdjustment;
@@ -21,6 +24,8 @@ import com.gym.domain.ptpass.entity.PtPassAdjustmentType;
 import com.gym.domain.ptpass.exception.InsufficientPtCountException;
 import com.gym.domain.ptpass.repository.PtPassAdjustmentRepository;
 import com.gym.domain.ptpass.repository.PtPassRepository;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -29,6 +34,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class PtPassServiceTest {
@@ -160,6 +168,55 @@ class PtPassServiceTest {
         assertThat(responses.get(0).delta()).isEqualTo(2);
         assertThat(responses.get(0).remainingAfter()).isEqualTo(12);
         assertThat(responses.get(0).adjustedBy()).isEqualTo(STAFF);
+    }
+
+    @Test
+    void 관리_목록은_조건이_없으면_전체_기간을_빈_검색어로_조회해_회원_정보와_함께_내려준다() {
+        Pageable pageable = PageRequest.of(0, 20);
+        PtPass ptPass = new PtPass(member(), 50, 10);
+        ptPass.deduct(3);
+        when(ptPassRepository.search(
+                        false, "", Instant.EPOCH, Instant.parse("9999-12-31T00:00:00Z"), pageable))
+                .thenReturn(new PageImpl<>(List.of(ptPass), pageable, 1));
+
+        PageResponse<PtPassListItemResponse> response =
+                ptPassService.getPtPasses(false, null, null, null, pageable);
+
+        assertThat(response.totalElements()).isEqualTo(1);
+        PtPassListItemResponse item = response.content().get(0);
+        assertThat(item.memberNo()).isEqualTo("260900001");
+        assertThat(item.memberName()).isEqualTo("김철수");
+        assertThat(item.sessionMinutes()).isEqualTo(50);
+        assertThat(item.totalCount()).isEqualTo(10);
+        assertThat(item.remainingCount()).isEqualTo(7);
+    }
+
+    @Test
+    void 관리_목록의_구매일_기간은_한국_시간의_하루로_잘라_종료일_끝까지_포함한다() {
+        Pageable pageable = PageRequest.of(0, 20);
+        // 10/01 00:00 KST = 09/30 15:00 UTC, 10/10 이 끝나는 10/11 00:00 KST = 10/10 15:00 UTC
+        when(ptPassRepository.search(
+                        true,
+                        "철수",
+                        Instant.parse("2026-09-30T15:00:00Z"),
+                        Instant.parse("2026-10-10T15:00:00Z"),
+                        pageable))
+                .thenReturn(new PageImpl<>(List.of(new PtPass(member(), 30, 5)), pageable, 1));
+
+        PageResponse<PtPassListItemResponse> response = ptPassService.getPtPasses(
+                true, "  철수  ", LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 10), pageable);
+
+        assertThat(response.content()).hasSize(1);
+    }
+
+    @Test
+    void 관리_목록의_구매일_종료일이_시작일보다_빠르면_거절한다() {
+        assertThatThrownBy(() -> ptPassService.getPtPasses(
+                        false, null, LocalDate.of(2026, 10, 10), LocalDate.of(2026, 10, 9), PageRequest.of(0, 20)))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_PT_PASS_SEARCH_PERIOD);
+        verify(ptPassRepository, never()).search(anyBoolean(), any(), any(), any(), any());
     }
 
     private static Member member() {
