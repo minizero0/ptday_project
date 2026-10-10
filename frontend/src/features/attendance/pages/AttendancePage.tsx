@@ -4,7 +4,7 @@ import { Card } from '../../../components/Card';
 import { formatDay } from '../../../lib/date';
 import { MemberDetailPanel } from '../../members/components/MemberDetailPanel';
 import { MembershipStatusBadge } from '../../memberships/components/MembershipStatusBadge';
-import { useDailyAttendancesQuery } from '../hooks/useAttendance';
+import { useAttendanceLiveUpdates, useDailyAttendancesQuery } from '../hooks/useAttendance';
 import type { Attendance } from '../types/attendance';
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
@@ -52,6 +52,7 @@ export function AttendancePage() {
   // 행 클릭으로 선택된 회원. 같은 행 재클릭 시 해제 (로컬 UI 상태 — useState)
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
   const { data, isLoading, isError } = useDailyAttendancesQuery(date);
+  useAttendanceLiveUpdates();
 
   const isToday = date === toDateParam(new Date());
 

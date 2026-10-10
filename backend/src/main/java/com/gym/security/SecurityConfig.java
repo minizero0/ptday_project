@@ -1,5 +1,6 @@
 package com.gym.security;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -51,6 +52,9 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // 출석 알림(SSE)처럼 열어 둔 응답을 마무리하는 내부 재처리(ASYNC)에는 토큰이 다시 실리지 않는다.
+                        // 처음 요청에서 이미 권한을 확인했으므로 통과시킨다.
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                         // 토큰 연장은 입구 키오스크 계정만 (더 구체적인 규칙을 먼저 둔다)
                         .requestMatchers("/api/auth/refresh").hasRole("KIOSK")
                         // 로그인 등 인증 경로는 공개

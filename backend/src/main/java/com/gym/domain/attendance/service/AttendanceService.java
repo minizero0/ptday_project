@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,14 +37,17 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final MemberRepository memberRepository;
     private final RepresentativeMembershipFinder representativeMembershipFinder;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AttendanceService(
             AttendanceRepository attendanceRepository,
             MemberRepository memberRepository,
-            RepresentativeMembershipFinder representativeMembershipFinder) {
+            RepresentativeMembershipFinder representativeMembershipFinder,
+            ApplicationEventPublisher eventPublisher) {
         this.attendanceRepository = attendanceRepository;
         this.memberRepository = memberRepository;
         this.representativeMembershipFinder = representativeMembershipFinder;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -126,6 +130,8 @@ public class AttendanceService {
         }
 
         Attendance saved = attendanceRepository.save(new Attendance(member));
+        // 데스크 화면에 실시간으로 알리기 위한 이벤트. 실제 전송은 커밋 뒤에 일어난다 (AttendanceEventBroadcaster)
+        eventPublisher.publishEvent(new AttendanceCheckedInEvent(today));
         return AttendanceResponse.from(saved, membership, today);
     }
 

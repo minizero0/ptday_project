@@ -4,11 +4,13 @@ import com.gym.common.response.ApiResponse;
 import com.gym.domain.attendance.dto.AttendanceCheckInRequest;
 import com.gym.domain.attendance.dto.AttendanceListResponse;
 import com.gym.domain.attendance.dto.CheckInResult;
+import com.gym.domain.attendance.service.AttendanceEventBroadcaster;
 import com.gym.domain.attendance.service.AttendanceService;
 import com.gym.domain.attendance.service.CheckInChannel;
 import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/attendances")
@@ -25,9 +28,12 @@ public class AttendanceController {
     private static final String KIOSK_AUTHORITY = "ROLE_KIOSK";
 
     private final AttendanceService attendanceService;
+    private final AttendanceEventBroadcaster attendanceEventBroadcaster;
 
-    public AttendanceController(AttendanceService attendanceService) {
+    public AttendanceController(
+            AttendanceService attendanceService, AttendanceEventBroadcaster attendanceEventBroadcaster) {
         this.attendanceService = attendanceService;
+        this.attendanceEventBroadcaster = attendanceEventBroadcaster;
     }
 
     /**
@@ -54,6 +60,15 @@ public class AttendanceController {
                     LocalDate date) {
         AttendanceListResponse response = attendanceService.getDailyAttendances(date);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 출석 실시간 알림(SSE). 출석이 기록될 때마다 "check-in" 이벤트로 그 날짜(yyyy-MM-dd)를 보낸다.
+     * 계속 열어 두는 스트림이라 공통 응답 래퍼(ApiResponse)를 쓰지 않는다.
+     */
+    @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribeEvents() {
+        return attendanceEventBroadcaster.subscribe();
     }
 
     // 키오스크 계정은 요청값과 상관없이 항상 가린다. 파라미터는 더 가리는 쪽으로만 쓸 수 있다.

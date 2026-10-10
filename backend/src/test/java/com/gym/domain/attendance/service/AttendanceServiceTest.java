@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class AttendanceServiceTest {
@@ -41,6 +42,9 @@ class AttendanceServiceTest {
 
     @Mock
     private RepresentativeMembershipFinder representativeMembershipFinder;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private AttendanceService attendanceService;
@@ -58,6 +62,7 @@ class AttendanceServiceTest {
         assertThat(result.attendance().name()).isEqualTo("홍길동");
         assertThat(result.attendance().membership().daysRemaining()).isEqualTo(20);
         verify(attendanceRepository).save(any(Attendance.class));
+        verify(eventPublisher).publishEvent(new AttendanceCheckedInEvent(today()));
     }
 
     @Test
@@ -153,6 +158,7 @@ class AttendanceServiceTest {
                 .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo(expected);
         verify(attendanceRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(AttendanceCheckedInEvent.class));
     }
 
     private void givenMembership(Member member, LocalDate startDate, LocalDate endDate) {

@@ -4,11 +4,12 @@ export const TOKEN_KEY = 'accessToken';
 
 // 기본은 상대경로('') — /api 요청이 Vite 프록시(개발)·nginx(운영)를 거쳐 백엔드로 간다.
 // 필요 시 .env 의 VITE_API_BASE_URL 로 절대주소를 덮어쓸 수 있다.
-const baseURL = import.meta.env.VITE_API_BASE_URL ?? '';
+// axios 를 거치지 않는 요청(출석 실시간 알림 스트림)도 같은 주소·같은 인증 헤더 형식을 쓰도록 내보낸다.
+export const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? '';
+export const BEARER_PREFIX = 'Bearer ';
 
-const api = axios.create({ baseURL });
+const api = axios.create({ baseURL: API_BASE_URL });
 
-const BEARER_PREFIX = 'Bearer ';
 const HTTP_UNAUTHORIZED = 401;
 
 type SessionExpiredHandler = () => void;
