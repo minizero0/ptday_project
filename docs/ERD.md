@@ -27,7 +27,7 @@ account ──(0~1)── member ──< attendance
    - 회원은 현재 로그인하지 않는 "관리 대상"이다.
    - 미래에 회원 로그인이 열리면 `account` 행을 만들고 `member.account_id`로 연결한다.
      테이블 구조 변경 없이 확장 가능하도록 **`account_id`(nullable) 씨앗**을 미리 심었다.
-2. **`role`로 로그인 주체를 구분한다.** `ADMIN` / `STAFF` / `TRAINER` / `MEMBER`.
+2. **`role`로 로그인 주체를 구분한다.** `ADMIN` / `STAFF` / `TRAINER` / `MEMBER` / `KIOSK`(입구 출석 키오스크 전용, 출석 체크만 가능).
 3. **회원번호(`member_no`)는 PK와 별개.** `id`는 내부 PK, `member_no`는 출석 체크용 노출 키.
    유일성 보장 + 인덱스(CLAUDE.md §9).
 4. **이용권·PT권은 회원 필드가 아니라 별도 테이블.** 한 회원이 여러 번 구매 가능(1:N).

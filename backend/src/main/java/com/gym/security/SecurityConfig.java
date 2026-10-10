@@ -51,6 +51,8 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // 토큰 연장은 입구 키오스크 계정만 (더 구체적인 규칙을 먼저 둔다)
+                        .requestMatchers("/api/auth/refresh").hasRole("KIOSK")
                         // 로그인 등 인증 경로는 공개
                         .requestMatchers("/api/auth/**").permitAll()
                         // 회원 삭제는 관리자만 (더 구체적인 규칙을 먼저 둔다)
@@ -67,6 +69,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/trainers", "/api/trainers/**")
                         .hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/pt-reservations", "/api/pt-reservations/**")
+                        .hasAnyRole("ADMIN", "STAFF")
+                        // 출석 체크는 입구 키오스크 계정도 할 수 있다. 출석 현황 조회는 관리자와 데스크 직원만
+                        .requestMatchers(HttpMethod.POST, "/api/attendances")
+                        .hasAnyRole("ADMIN", "STAFF", "KIOSK")
+                        .requestMatchers("/api/attendances", "/api/attendances/**")
                         .hasAnyRole("ADMIN", "STAFF")
                         // 그 외 모든 요청은 인증만 되면 허용
                         .anyRequest().authenticated())

@@ -7,5 +7,7 @@ public enum Role {
     ADMIN,
     STAFF,
     TRAINER,
-    MEMBER
+    MEMBER,
+    // 입구 출석 키오스크(태블릿) 전용. 출석 체크만 할 수 있다
+    KIOSK
 }

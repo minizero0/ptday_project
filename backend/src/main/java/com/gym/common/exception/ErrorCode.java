@@ -24,6 +24,8 @@ public enum ErrorCode {
     MEMBERSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "이용권을 찾을 수 없습니다."),
     MEMBERSHIP_END_DATE_REQUIRED(HttpStatus.BAD_REQUEST, "만료일을 입력하세요."),
     INVALID_MEMBERSHIP_PERIOD(HttpStatus.BAD_REQUEST, "만료일은 시작일보다 빠를 수 없습니다."),
+    MEMBERSHIP_NOT_ACTIVE(HttpStatus.CONFLICT, "이용 중인 이용권이 없습니다. 데스크에 문의해주세요."),
+    MEMBERSHIP_EXPIRED(HttpStatus.CONFLICT, "이용권이 만료되었습니다. 데스크에 문의해주세요."),
 
     // PT권
     PT_PASS_NOT_FOUND(HttpStatus.NOT_FOUND, "PT권을 찾을 수 없습니다."),

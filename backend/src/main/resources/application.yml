@@ -27,9 +27,15 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   access-token-validity-seconds: ${JWT_ACCESS_TOKEN_VALIDITY_SECONDS:3600}
+  # 입구 키오스크는 한 번 로그인해 계속 켜 두므로 토큰을 길게 준다 (기본 30일)
+  kiosk-token-validity-seconds: ${JWT_KIOSK_TOKEN_VALIDITY_SECONDS:2592000}
 
 # 첫 관리자 계정 시딩 값. 실제 비밀번호는 .env 로 주입한다 (CLAUDE.md §12)
 app:
   admin:
     username: ${ADMIN_USERNAME:admin}
     password: ${ADMIN_PASSWORD}
+  # 입구 출석 키오스크 전용 계정 시딩 값. 둘 중 하나라도 비어 있으면 만들지 않는다
+  kiosk:
+    username: ${KIOSK_USERNAME:}
+    password: ${KIOSK_PASSWORD:}

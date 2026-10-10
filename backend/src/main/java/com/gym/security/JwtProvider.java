@@ -22,17 +22,23 @@ public class JwtProvider {
 
     private final SecretKey key;
     private final long accessTokenValiditySeconds;
+    private final long kioskTokenValiditySeconds;
 
     public JwtProvider(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.access-token-validity-seconds}") long accessTokenValiditySeconds) {
+            @Value("${jwt.access-token-validity-seconds}") long accessTokenValiditySeconds,
+            @Value("${jwt.kiosk-token-validity-seconds}") long kioskTokenValiditySeconds) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenValiditySeconds = accessTokenValiditySeconds;
+        this.kioskTokenValiditySeconds = kioskTokenValiditySeconds;
     }
 
     public String createAccessToken(String username, Role role) {
         Instant now = Instant.now();
-        Instant expiry = now.plusSeconds(accessTokenValiditySeconds);
+        // 입구 키오스크는 로그인해 둔 채 계속 켜 둔다. 갱신 토큰이 없으므로 이 역할만 길게 발급한다.
+        long validitySeconds =
+                role == Role.KIOSK ? kioskTokenValiditySeconds : accessTokenValiditySeconds;
+        Instant expiry = now.plusSeconds(validitySeconds);
         return Jwts.builder()
                 .subject(username)
                 .claim(ROLE_CLAIM, role.name())
